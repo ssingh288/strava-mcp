@@ -78,7 +78,7 @@ class StravaAuthenticator:
                 self.token_future.set_result(token_data.refresh_token)
 
             return HTMLResponse(
-                "<h1>Authorization successful!</h1>" "<p>You can close this tab and return to the application.</p>"
+                "<h1>Authorization successful!</h1><p>You can close this tab and return to the application.</p>"
             )
         except Exception as e:
             logger.exception("Error during token exchange")
@@ -87,7 +87,7 @@ class StravaAuthenticator:
             if self.token_future and not self.token_future.done():
                 self.token_future.set_exception(e)
 
-            return HTMLResponse("<h1>Authorization failed!</h1>" "<p>An error occurred. Please check the logs.</p>")
+            return HTMLResponse("<h1>Authorization failed!</h1><p>An error occurred. Please check the logs.</p>")
 
     async def _exchange_code_for_token(self, code: str) -> TokenResponse:
         """Exchange the authorization code for tokens.
