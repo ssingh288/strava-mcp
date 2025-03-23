@@ -1,0 +1,93 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+        
+    - name: Install uv
+      run: |
+        pip install --upgrade pip
+        pip install uv
+    
+    - name: Install dependencies
+      run: |
+        uv sync
+      
+    - name: Install pytest-cov
+      run: |
+        uv pip install pytest-cov
+        
+    - name: Run linting
+      run: |
+        uv pip install ruff
+        ruff check .
+        ruff format --check .
+        
+    - name: Create dummy .env file for tests
+      run: |
+        echo "STRAVA_CLIENT_ID=test_client_id" > .env
+        echo "STRAVA_CLIENT_SECRET=test_client_secret" >> .env
+        echo "STRAVA_REFRESH_TOKEN=test_refresh_token" >> .env
+      
+    - name: Run tests with coverage
+      run: |
+        python -m pytest --cov=strava_mcp --cov-report=xml
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.xml
+        
+  server-startup:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+        
+    - name: Install uv
+      run: |
+        pip install --upgrade pip
+        pip install uv
+    
+    - name: Install dependencies
+      run: |
+        uv sync
+        
+    - name: Create dummy .env file for server
+      run: |
+        echo "STRAVA_CLIENT_ID=test_client_id" > .env
+        echo "STRAVA_CLIENT_SECRET=test_client_secret" >> .env
+        echo "STRAVA_REFRESH_TOKEN=test_refresh_token" >> .env
+        
+    - name: Test server startup
+      run: |
+        # Start the server in the background and kill it after 5 seconds
+        timeout 5s python main.py || code=$?
+        if [ $code -eq 124 ]; then
+          echo "Server started successfully and was terminated after timeout"
+          exit 0
+        else
+          echo "Server failed to start with exit code $code"
+          exit 1
+        fi
