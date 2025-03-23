@@ -1,13 +1,13 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-from strava_mcp.server import mcp
-from strava_mcp.models import Activity, DetailedActivity, SegmentEffort, Leaderboard
+import pytest
+
+from strava_mcp.models import Activity, DetailedActivity, Leaderboard, SegmentEffort
 
 
 class MockContext:
     """Mock MCP context for testing."""
-    
+
     def __init__(self, service):
         self.request_context = MagicMock()
         self.request_context.lifespan_context = {"service": service}
@@ -60,14 +60,15 @@ async def test_get_user_activities(mock_ctx, mock_service):
         max_heartrate=160,
     )
     mock_service.get_activities.return_value = [mock_activity]
-    
+
     # Test tool
     from strava_mcp.server import get_user_activities
+
     result = await get_user_activities(mock_ctx)
-    
+
     # Verify service call
     mock_service.get_activities.assert_called_once_with(None, None, 1, 30)
-    
+
     # Verify result
     assert len(result) == 1
     assert result[0]["id"] == mock_activity.id
@@ -108,14 +109,15 @@ async def test_get_activity(mock_ctx, mock_service):
         description="Test description",
     )
     mock_service.get_activity.return_value = mock_activity
-    
+
     # Test tool
     from strava_mcp.server import get_activity
+
     result = await get_activity(mock_ctx, 1234567890)
-    
+
     # Verify service call
     mock_service.get_activity.assert_called_once_with(1234567890, False)
-    
+
     # Verify result
     assert result["id"] == mock_activity.id
     assert result["name"] == mock_activity.name
@@ -154,14 +156,15 @@ async def test_get_activity_segments(mock_ctx, mock_service):
         },
     )
     mock_service.get_activity_segments.return_value = [mock_segment]
-    
+
     # Test tool
     from strava_mcp.server import get_activity_segments
+
     result = await get_activity_segments(mock_ctx, 1234567890)
-    
+
     # Verify service call
     mock_service.get_activity_segments.assert_called_once_with(1234567890)
-    
+
     # Verify result
     assert len(result) == 1
     assert result[0]["id"] == mock_segment.id
@@ -194,16 +197,17 @@ async def test_get_segment_leaderboard(mock_ctx, mock_service):
         ],
     )
     mock_service.get_segment_leaderboard.return_value = mock_leaderboard
-    
+
     # Test tool
     from strava_mcp.server import get_segment_leaderboard
+
     result = await get_segment_leaderboard(mock_ctx, 12345)
-    
+
     # Verify service call
     mock_service.get_segment_leaderboard.assert_called_once_with(
         12345, None, None, None, None, None, None, None, 1, 30
     )
-    
+
     # Verify result
     assert result["entry_count"] == mock_leaderboard.entry_count
     assert result["effort_count"] == mock_leaderboard.effort_count

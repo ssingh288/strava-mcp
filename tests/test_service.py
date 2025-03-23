@@ -1,9 +1,10 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from strava_mcp.config import StravaSettings
+from strava_mcp.models import Activity, DetailedActivity, Leaderboard, SegmentEffort
 from strava_mcp.service import StravaService
-from strava_mcp.models import Activity, DetailedActivity, SegmentEffort, Leaderboard
 
 
 @pytest.fixture
@@ -64,13 +65,13 @@ async def test_get_activities(service, mock_api):
         max_heartrate=160,
     )
     mock_api.get_activities.return_value = [mock_activity]
-    
+
     # Test get_activities
     activities = await service.get_activities()
-    
+
     # Verify API call
     mock_api.get_activities.assert_called_once_with(None, None, 1, 30)
-    
+
     # Verify response
     assert len(activities) == 1
     assert activities[0] == mock_activity
@@ -110,13 +111,13 @@ async def test_get_activity(service, mock_api):
         description="Test description",
     )
     mock_api.get_activity.return_value = mock_activity
-    
+
     # Test get_activity
     activity = await service.get_activity(1234567890)
-    
+
     # Verify API call
     mock_api.get_activity.assert_called_once_with(1234567890, False)
-    
+
     # Verify response
     assert activity == mock_activity
 
@@ -153,13 +154,13 @@ async def test_get_activity_segments(service, mock_api):
         },
     )
     mock_api.get_activity_segments.return_value = [mock_segment]
-    
+
     # Test get_activity_segments
     segments = await service.get_activity_segments(1234567890)
-    
+
     # Verify API call
     mock_api.get_activity_segments.assert_called_once_with(1234567890)
-    
+
     # Verify response
     assert len(segments) == 1
     assert segments[0] == mock_segment
@@ -191,14 +192,14 @@ async def test_get_segment_leaderboard(service, mock_api):
         ],
     )
     mock_api.get_segment_leaderboard.return_value = mock_leaderboard
-    
+
     # Test get_segment_leaderboard
     leaderboard = await service.get_segment_leaderboard(12345)
-    
+
     # Verify API call
     mock_api.get_segment_leaderboard.assert_called_once_with(
         12345, None, None, None, None, None, None, None, 1, 30
     )
-    
+
     # Verify response
     assert leaderboard == mock_leaderboard

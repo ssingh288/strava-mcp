@@ -1,15 +1,12 @@
 import logging
-import json
-from typing import List, Optional, Dict, Any
-from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from typing import Any
 
-from mcp.server.fastmcp import FastMCP, Context
+from mcp.server.fastmcp import Context, FastMCP
 
 from strava_mcp.config import StravaSettings
 from strava_mcp.service import StravaService
-from strava_mcp.models import Activity, DetailedActivity, SegmentEffort, Leaderboard
-
 
 # Configure logging
 logging.basicConfig(
@@ -20,12 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(server: FastMCP) -> AsyncIterator[Dict[str, Any]]:
+async def lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     """Set up and tear down the Strava service for the MCP server.
-    
+
     Args:
         server: The FastMCP server instance
-    
+
     Yields:
         The lifespan context containing the Strava service
     """
@@ -36,11 +33,11 @@ async def lifespan(server: FastMCP) -> AsyncIterator[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Failed to load Strava API settings: {str(e)}")
         raise
-    
+
     # Initialize the Strava service
     service = StravaService(settings)
     logger.info("Initialized Strava service")
-    
+
     try:
         yield {"service": service}
     finally:
@@ -60,25 +57,25 @@ mcp = FastMCP(
 @mcp.tool()
 async def get_user_activities(
     ctx: Context,
-    before: Optional[int] = None,
-    after: Optional[int] = None,
+    before: int | None = None,
+    after: int | None = None,
     page: int = 1,
     per_page: int = 30,
-) -> List[Dict]:
+) -> list[dict]:
     """Get the authenticated user's activities.
-    
+
     Args:
         ctx: The MCP request context
-        before: An epoch timestamp to use for filtering activities that have taken place before a certain time
-        after: An epoch timestamp to use for filtering activities that have taken place after a certain time
+        before: An epoch timestamp for filtering activities before a certain time
+        after: An epoch timestamp for filtering activities after a certain time
         page: Page number
         per_page: Number of items per page
-    
+
     Returns:
         List of activities
     """
     service = ctx.request_context.lifespan_context["service"]
-    
+
     try:
         activities = await service.get_activities(before, after, page, per_page)
         return [activity.model_dump() for activity in activities]
@@ -92,19 +89,19 @@ async def get_activity(
     ctx: Context,
     activity_id: int,
     include_all_efforts: bool = False,
-) -> Dict:
+) -> dict:
     """Get details of a specific activity.
-    
+
     Args:
         ctx: The MCP request context
         activity_id: The ID of the activity
         include_all_efforts: Whether to include all segment efforts
-    
+
     Returns:
         The activity details
     """
     service = ctx.request_context.lifespan_context["service"]
-    
+
     try:
         activity = await service.get_activity(activity_id, include_all_efforts)
         return activity.model_dump()
@@ -117,18 +114,18 @@ async def get_activity(
 async def get_activity_segments(
     ctx: Context,
     activity_id: int,
-) -> List[Dict]:
+) -> list[dict]:
     """Get the segments of a specific activity.
-    
+
     Args:
         ctx: The MCP request context
         activity_id: The ID of the activity
-    
+
     Returns:
         List of segment efforts for the activity
     """
     service = ctx.request_context.lifespan_context["service"]
-    
+
     try:
         segments = await service.get_activity_segments(activity_id)
         return [segment.model_dump() for segment in segments]
@@ -141,18 +138,18 @@ async def get_activity_segments(
 async def get_segment_leaderboard(
     ctx: Context,
     segment_id: int,
-    gender: Optional[str] = None,
-    age_group: Optional[str] = None,
-    weight_class: Optional[str] = None,
-    following: Optional[bool] = None,
-    club_id: Optional[int] = None,
-    date_range: Optional[str] = None,
-    context_entries: Optional[int] = None,
+    gender: str | None = None,
+    age_group: str | None = None,
+    weight_class: str | None = None,
+    following: bool | None = None,
+    club_id: int | None = None,
+    date_range: str | None = None,
+    context_entries: int | None = None,
     page: int = 1,
     per_page: int = 30,
-) -> Dict:
+) -> dict:
     """Get the leaderboard for a given segment.
-    
+
     Args:
         ctx: The MCP request context
         segment_id: The ID of the segment
@@ -165,12 +162,12 @@ async def get_segment_leaderboard(
         context_entries: Number of context entries
         page: Page number
         per_page: Number of items per page
-    
+
     Returns:
         The segment leaderboard
     """
     service = ctx.request_context.lifespan_context["service"]
-    
+
     try:
         leaderboard = await service.get_segment_leaderboard(
             segment_id,

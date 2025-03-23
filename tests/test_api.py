@@ -1,9 +1,10 @@
-import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from strava_mcp.config import StravaSettings
+import pytest
+
 from strava_mcp.api import StravaAPI
+from strava_mcp.config import StravaSettings
 from strava_mcp.models import Activity, DetailedActivity, Leaderboard
 
 
@@ -39,7 +40,7 @@ async def test_ensure_token_valid(api):
     # Token is already valid
     token = await api._ensure_token()
     assert token == "test_access_token"
-    
+
 
 @pytest.mark.asyncio
 async def test_ensure_token_refresh(settings):
@@ -53,16 +54,16 @@ async def test_ensure_token_refresh(settings):
             "expires_at": datetime.now().timestamp() + 3600,
         }
         mock_instance.post.return_value = mock_response
-        
+
         # Create API with expired token
         api = StravaAPI(settings)
         api.access_token = "old_access_token"
         api.token_expires_at = datetime.now().timestamp() - 3600
-        
+
         # Test token refresh
         token = await api._ensure_token()
         assert token == "new_access_token"
-        
+
         # Verify correct API call was made
         mock_instance.post.assert_called_once()
         args, kwargs = mock_instance.post.call_args
@@ -106,17 +107,17 @@ async def test_get_activities(api, mock_response):
     }
     mock_response.json.return_value = [activity_data]
     api._client.request.return_value = mock_response
-    
+
     # Test get_activities
     activities = await api.get_activities()
-    
+
     # Verify request
     api._client.request.assert_called_once()
     args, kwargs = api._client.request.call_args
     assert args[0] == "GET"
     assert args[1] == "/athlete/activities"
     assert kwargs["params"] == {"page": 1, "per_page": 30}
-    
+
     # Verify response
     assert len(activities) == 1
     assert isinstance(activities[0], Activity)
@@ -159,16 +160,16 @@ async def test_get_activity(api, mock_response):
     }
     mock_response.json.return_value = activity_data
     api._client.request.return_value = mock_response
-    
+
     # Test get_activity
     activity = await api.get_activity(1234567890)
-    
+
     # Verify request
     api._client.request.assert_called_once()
     args, kwargs = api._client.request.call_args
     assert args[0] == "GET"
     assert args[1] == "/activities/1234567890"
-    
+
     # Verify response
     assert isinstance(activity, DetailedActivity)
     assert activity.id == activity_data["id"]
@@ -199,21 +200,21 @@ async def test_get_segment_leaderboard(api, mock_response):
                 "effort_id": 67890,
                 "rank": 1,
             }
-        ]
+        ],
     }
     mock_response.json.return_value = leaderboard_data
     api._client.request.return_value = mock_response
-    
+
     # Test get_segment_leaderboard
     leaderboard = await api.get_segment_leaderboard(12345)
-    
+
     # Verify request
     api._client.request.assert_called_once()
     args, kwargs = api._client.request.call_args
     assert args[0] == "GET"
     assert args[1] == "/segments/12345/leaderboard"
     assert kwargs["params"] == {"page": 1, "per_page": 30}
-    
+
     # Verify response
     assert isinstance(leaderboard, Leaderboard)
     assert leaderboard.entry_count == leaderboard_data["entry_count"]

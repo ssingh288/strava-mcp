@@ -15,7 +15,31 @@ dependencies = [
 dev = [
     "devtools>=0.12.2",
     "ipykernel>=6.29.5",
+    "pre-commit>=3.7.1",
     "pytest>=8.3.5",
     "pytest-mock>=3.14.0",
     "pytest-asyncio>=0.23.5",
+    "ruff>=0.5.1",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "N", "UP", "B"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.pyright]
+typeCheckingMode = "standard"
+reportMissingImports = false
+reportMissingTypeStubs = false
