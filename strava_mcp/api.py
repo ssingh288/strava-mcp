@@ -1,7 +1,9 @@
 import logging
 from datetime import datetime
+from typing import Optional
 
 import httpx
+from fastapi import FastAPI
 from httpx import Response
 
 from strava_mcp.config import StravaSettings
@@ -18,15 +20,18 @@ logger = logging.getLogger(__name__)
 class StravaAPI:
     """Client for the Strava API."""
 
-    def __init__(self, settings: StravaSettings):
+    def __init__(self, settings: StravaSettings, app: Optional[FastAPI] = None):
         """Initialize the Strava API client.
 
         Args:
             settings: Strava API settings
+            app: FastAPI app for auth routes (optional)
         """
         self.settings = settings
         self.access_token = None
         self.token_expires_at = None
+        self.app = app
+        self.auth_flow_in_progress = False
         self._client = httpx.AsyncClient(
             base_url=settings.base_url,
             timeout=30.0,
@@ -36,11 +41,97 @@ class StravaAPI:
         """Close the HTTP client."""
         await self._client.aclose()
 
+    async def setup_auth_routes(self):
+        """Set up authentication routes if app is available."""
+        if not self.app:
+            logger.warning("No FastAPI app provided, skipping auth routes setup")
+            return
+
+        from strava_mcp.auth import StravaAuthenticator
+        
+        # Check if we have a FastAPI app or a FastMCP server
+        fastapi_app = None
+        
+        # If it's a FastAPI app, use it directly
+        if hasattr(self.app, "add_api_route"):
+            fastapi_app = self.app
+        # If it's a FastMCP server, try to get its FastAPI app
+        elif hasattr(self.app, "_app"):
+            fastapi_app = self.app._app
+        
+        if not fastapi_app:
+            logger.warning("Could not get FastAPI app from the provided object, auth flow will not be available")
+            return
+            
+        # Create authenticator and set up routes
+        try:
+            authenticator = StravaAuthenticator(
+                self.settings.client_id,
+                self.settings.client_secret,
+                fastapi_app
+            )
+            authenticator.setup_routes(fastapi_app)
+            
+            # Store authenticator for later use
+            self._authenticator = authenticator
+            logger.info("Successfully set up Strava auth routes")
+        except Exception as e:
+            logger.error(f"Error setting up auth routes: {e}")
+            return
+
+    async def start_auth_flow(self) -> str:
+        """Start the auth flow to get a refresh token.
+
+        Returns:
+            The refresh token
+
+        Raises:
+            Exception: If the auth flow fails or is not available
+        """
+        if not self.app:
+            raise Exception(
+                "No FastAPI app available for auth flow. "
+                "Please set STRAVA_REFRESH_TOKEN manually in your environment variables."
+            )
+            
+        authenticator = getattr(self, '_authenticator', None)
+        if not authenticator:
+            raise Exception(
+                "Auth routes not set up or setup failed. "
+                "Please set STRAVA_REFRESH_TOKEN manually in your environment variables."
+            )
+        
+        if self.auth_flow_in_progress:
+            raise Exception("Auth flow already in progress")
+        
+        self.auth_flow_in_progress = True
+        try:
+            # Display instructions to the user and open browser
+            auth_url = self._authenticator.get_authorization_url()
+            logger.info(
+                f"\nNo refresh token available. Opening browser for authorization. "
+                f"If browser doesn't open, please visit this URL manually: {auth_url}"
+            )
+            
+            # Get the refresh token and open browser automatically
+            refresh_token = await self._authenticator.get_refresh_token(open_browser=True)
+            
+            # Store it in settings
+            self.settings.refresh_token = refresh_token
+            
+            logger.info("Successfully obtained refresh token")
+            return refresh_token
+        finally:
+            self.auth_flow_in_progress = False
+
     async def _ensure_token(self) -> str:
         """Ensure we have a valid access token.
 
         Returns:
             The access token
+        
+        Raises:
+            Exception: If unable to obtain a valid token
         """
         now = datetime.now().timestamp()
 
@@ -48,7 +139,40 @@ class StravaAPI:
         if self.access_token and self.token_expires_at and now < self.token_expires_at:
             return self.access_token
 
-        # Otherwise, refresh the token
+        # If we don't have a refresh token, try to get one through standalone OAuth flow
+        if not self.settings.refresh_token:
+            logger.warning("No refresh token available, launching standalone OAuth server")
+            try:
+                # Import here to avoid circular import
+                from strava_mcp.oauth_server import get_refresh_token_from_oauth
+                
+                logger.info("Starting OAuth flow to get refresh token")
+                self.settings.refresh_token = await get_refresh_token_from_oauth(
+                    self.settings.client_id,
+                    self.settings.client_secret
+                )
+                logger.info("Successfully obtained refresh token from OAuth flow")
+            except Exception as e:
+                error_msg = f"Failed to get refresh token through OAuth flow: {e}"
+                logger.error(error_msg)
+                
+                # Fall back to the original auth flow if available and requested
+                if self.app and not self.auth_flow_in_progress:
+                    logger.info("Falling back to MCP-integrated auth flow")
+                    try:
+                        self.settings.refresh_token = await self.start_auth_flow()
+                    except Exception as fallback_error:
+                        raise Exception(
+                            "No refresh token available and all auth flows failed. "
+                            "Please set STRAVA_REFRESH_TOKEN manually in your environment variables."
+                        ) from fallback_error
+                else:
+                    raise Exception(
+                        "No refresh token available and OAuth flow failed. "
+                        "Please set STRAVA_REFRESH_TOKEN manually in your environment variables."
+                    ) from e
+
+        # Now that we have a refresh token, refresh the access token
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 "https://www.strava.com/oauth/token",
@@ -68,11 +192,12 @@ class StravaAPI:
             data = response.json()
             self.access_token = data["access_token"]
             self.token_expires_at = data["expires_at"]
+            
+            # Update the refresh token if it changed
+            if "refresh_token" in data:
+                self.settings.refresh_token = data["refresh_token"]
 
             logger.info("Successfully refreshed access token")
-            # TODO remove this, do not log secrets
-            # logger.info(f"Token expires at: {self.token_expires_at}")
-            # logger.info(f"Token value: {self.access_token}")
             return self.access_token
 
     async def _request(self, method: str, endpoint: str, **kwargs) -> Response:
