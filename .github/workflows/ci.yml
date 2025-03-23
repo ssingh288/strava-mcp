@@ -52,7 +52,7 @@ jobs:
       
     - name: Run tests with coverage
       run: |
-        python -m pytest --cov=strava_mcp --cov-report=xml
+        uv run pytest --cov=gen_ai_on_aws && uv run coverage xml
       
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
@@ -90,7 +90,7 @@ jobs:
     - name: Test server startup
       run: |
         # Start the server in the background and kill it after 5 seconds
-        timeout 5s python main.py || code=$?
+        timeout 5s uv run python main.py || code=$?
         if [ $code -eq 124 ]; then
           echo "Server started successfully and was terminated after timeout"
           exit 0
