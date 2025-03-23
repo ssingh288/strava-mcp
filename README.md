@@ -16,7 +16,7 @@ This MCP server provides tools to access data from the Strava API:
 ### Prerequisites
 
 - Python 3.13 or later
-- Strava API credentials (client ID, client secret, and refresh token)
+- Strava API credentials (client ID and client secret)
 
 ### Setup
 
@@ -35,44 +35,31 @@ uv install
 
 3. Set up environment variables with your Strava API credentials:
 
-
-Follow the instructions in https://developers.strava.com/docs/getting-started/#curl to get your credentials.
-
-Create a Strava app:
+Create a Strava app at https://www.strava.com/settings/api and obtain your client ID and client secret.
 
 ```bash
-export STRAVA_CLIENT_ID=your_client_id  ## from https://www.strava.com/settings/api
-export STRAVA_CLIENT_SECRET=your_client_secret  ## from https://www.strava.com/settings/api
+export STRAVA_CLIENT_ID=your_client_id  # from https://www.strava.com/settings/api
+export STRAVA_CLIENT_SECRET=your_client_secret  # from https://www.strava.com/settings/api
 ```
 
-Then, to get the refresh token with appropriate scopes, follow the instructions in https://developers.strava.com/docs/getting-started/#curl.
-Please not scope is set to `read_all` so we can get all the data, not only basic profile information.
+Alternatively, you can create a `.env` file in the root directory with these variables.
 
-Access the following URL with your browser to authorize the app:
+### Authentication
 
-```bash
-echo "http://www.strava.com/oauth/authorize?client_id=$STRAVA_CLIENT_ID&response_type=code&redirect_uri=http://localhost/exchange_token&approval_prompt=force&scope=activity:read_all,read_all" | pbcopy
-```
+The server now includes an automatic OAuth flow:
 
+1. The first time you make a request to the Strava API, the server will check if you have a refresh token.
+2. If no refresh token is found, it will automatically open your browser to the Strava authorization page.
+3. After authorizing the application in your browser, you'll be redirected to a local callback page.
+4. The server will automatically obtain and store the refresh token for future use.
 
-Then, you will be redirected to a URL with a code. Copy the code and paste it into the following command:
-
-```bash
-CODE=your_code  ## from the URL
-http POST https://www.strava.com/oauth/token \
-  client_id=$STRAVA_CLIENT_ID \
-  client_secret=$STRAVA_CLIENT_SECRET \
-  code=$CODE \
-  grant_type=authorization_code
-```
-
-This will return a JSON response with the refresh token. Copy the refresh token and paste it into the following command:
+You can also set the refresh token manually if preferred:
 
 ```bash
 export STRAVA_REFRESH_TOKEN=your_refresh_token
 ```
 
-Alternatively, you can create a `.env` file in the root directory with these variables.
+This approach eliminates the need to manually go through the authorization flow and copy/paste tokens.
 
 ## Usage
 

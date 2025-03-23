@@ -30,10 +30,16 @@ class StravaService:
         
         # If we don't have a refresh token, log instructions for manual auth
         if not self.settings.refresh_token:
-            logger.info(
-                "No STRAVA_REFRESH_TOKEN found in environment. "
-                "You'll need to complete authentication when making API calls."
-            )
+            if self.api.app:
+                logger.info(
+                    "No STRAVA_REFRESH_TOKEN found in environment. "
+                    "The authentication flow will be triggered automatically when needed."
+                )
+            else:
+                logger.warning(
+                    "No STRAVA_REFRESH_TOKEN found in environment and no FastAPI app is available. "
+                    "You'll need to set STRAVA_REFRESH_TOKEN manually for authentication to work."
+                )
 
     async def close(self):
         """Close the API client."""
