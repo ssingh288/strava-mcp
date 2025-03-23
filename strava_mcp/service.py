@@ -1,4 +1,7 @@
 import logging
+from typing import Optional
+
+from fastapi import FastAPI
 
 from strava_mcp.api import StravaAPI
 from strava_mcp.config import StravaSettings
@@ -10,14 +13,27 @@ logger = logging.getLogger(__name__)
 class StravaService:
     """Service for interacting with the Strava API."""
 
-    def __init__(self, settings: StravaSettings):
+    def __init__(self, settings: StravaSettings, app: Optional[FastAPI] = None):
         """Initialize the Strava service.
 
         Args:
             settings: Strava API settings
+            app: FastAPI app for auth routes (optional)
         """
         self.settings = settings
-        self.api = StravaAPI(settings)
+        self.api = StravaAPI(settings, app)
+
+    async def initialize(self):
+        """Initialize the service, setting up auth routes if needed."""
+        # Set up authentication routes if app is available
+        await self.api.setup_auth_routes()
+        
+        # If we don't have a refresh token, log instructions for manual auth
+        if not self.settings.refresh_token:
+            logger.info(
+                "No STRAVA_REFRESH_TOKEN found in environment. "
+                "You'll need to complete authentication when making API calls."
+            )
 
     async def close(self):
         """Close the API client."""

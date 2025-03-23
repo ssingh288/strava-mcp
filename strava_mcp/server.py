@@ -34,9 +34,13 @@ async def lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
         logger.error(f"Failed to load Strava API settings: {str(e)}")
         raise
 
-    # Initialize the Strava service
-    service = StravaService(settings)
+    # Initialize the Strava service with the FastAPI app
+    service = StravaService(settings, server.app)
     logger.info("Initialized Strava service")
+    
+    # Set up authentication routes and initialize
+    await service.initialize()
+    logger.info("Service initialization completed")
 
     try:
         yield {"service": service}
