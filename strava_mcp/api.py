@@ -49,9 +49,12 @@ class StravaAPI:
         # If it's a FastAPI app, use it directly
         if hasattr(self.app, "add_api_route"):
             fastapi_app = self.app
-        # If it's a FastMCP server, try to get its FastAPI app
-        elif hasattr(self.app, "_app"):
-            fastapi_app = self.app._app
+        # If it's a FastMCP server, try to get its underlying app
+        # FastMCP doesn't have a public API for this, but we can use type checking
+        # to treat it as a FastAPI instance as it extends FastAPI
+        else:
+            # Just use the app itself since it should be a FastAPI instance or subclass
+            fastapi_app = self.app
 
         if not fastapi_app:
             logger.warning("Could not get FastAPI app from the provided object, auth flow will not be available")

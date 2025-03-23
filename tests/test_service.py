@@ -1,9 +1,10 @@
+from datetime import datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from strava_mcp.config import StravaSettings
-from strava_mcp.models import Activity, DetailedActivity, SegmentEffort
+from strava_mcp.models import Activity, DetailedActivity, Segment, SegmentEffort
 from strava_mcp.service import StravaService
 
 
@@ -13,6 +14,7 @@ def settings():
         client_id="test_client_id",
         client_secret="test_client_secret",
         refresh_token="test_refresh_token",
+        base_url="https://www.strava.com/api/v3",
     )
 
 
@@ -44,8 +46,8 @@ async def test_get_activities(service, mock_api):
         total_elevation_gain=50,
         type="Run",
         sport_type="Run",
-        start_date="2023-01-01T10:00:00Z",
-        start_date_local="2023-01-01T10:00:00Z",
+        start_date=datetime.fromisoformat("2023-01-01T10:00:00+00:00"),
+        start_date_local=datetime.fromisoformat("2023-01-01T10:00:00+00:00"),
         timezone="Europe/London",
         achievement_count=2,
         kudos_count=5,
@@ -62,6 +64,11 @@ async def test_get_activities(service, mock_api):
         has_heartrate=True,
         average_heartrate=140,
         max_heartrate=160,
+        # Add required fields with default values
+        map=None,
+        workout_type=None,
+        elev_high=None,
+        elev_low=None,
     )
     mock_api.get_activities.return_value = [mock_activity]
 
@@ -88,8 +95,8 @@ async def test_get_activity(service, mock_api):
         total_elevation_gain=50,
         type="Run",
         sport_type="Run",
-        start_date="2023-01-01T10:00:00Z",
-        start_date_local="2023-01-01T10:00:00Z",
+        start_date=datetime.fromisoformat("2023-01-01T10:00:00+00:00"),
+        start_date_local=datetime.fromisoformat("2023-01-01T10:00:00+00:00"),
         timezone="Europe/London",
         achievement_count=2,
         kudos_count=5,
@@ -108,6 +115,19 @@ async def test_get_activity(service, mock_api):
         max_heartrate=160,
         athlete={"id": 123},
         description="Test description",
+        # Add required fields with default values
+        map=None,
+        workout_type=None,
+        elev_high=None,
+        elev_low=None,
+        calories=None,
+        segment_efforts=None,
+        splits_metric=None,
+        splits_standard=None,
+        best_efforts=None,
+        photos=None,
+        gear=None,
+        device_name=None,
     )
     mock_api.get_activity.return_value = mock_activity
 
@@ -131,26 +151,36 @@ async def test_get_activity_segments(service, mock_api):
         name="Test Segment",
         elapsed_time=180,
         moving_time=180,
-        start_date="2023-01-01T10:05:00Z",
-        start_date_local="2023-01-01T10:05:00Z",
+        start_date=datetime.fromisoformat("2023-01-01T10:05:00+00:00"),
+        start_date_local=datetime.fromisoformat("2023-01-01T10:05:00+00:00"),
         distance=1000,
         athlete={"id": 123},
-        segment={
-            "id": 12345,
-            "name": "Test Segment",
-            "activity_type": "Run",
-            "distance": 1000,
-            "average_grade": 5.0,
-            "maximum_grade": 10.0,
-            "elevation_high": 200,
-            "elevation_low": 150,
-            "total_elevation_gain": 50,
-            "start_latlng": [51.5, -0.1],
-            "end_latlng": [51.5, -0.2],
-            "climb_category": 0,
-            "private": False,
-            "starred": False,
-        },
+        segment=Segment(
+            id=12345,
+            name="Test Segment",
+            activity_type="Run",
+            distance=1000,
+            average_grade=5.0,
+            maximum_grade=10.0,
+            elevation_high=200,
+            elevation_low=150,
+            total_elevation_gain=50,
+            start_latlng=[51.5, -0.1],
+            end_latlng=[51.5, -0.2],
+            climb_category=0,
+            private=False,
+            starred=False,
+            city=None,
+            state=None,
+            country=None,
+        ),
+        # Add required fields with default values
+        average_watts=None,
+        device_watts=None,
+        average_heartrate=None,
+        max_heartrate=None,
+        pr_rank=None,
+        achievements=None,
     )
     mock_api.get_activity_segments.return_value = [mock_segment]
 

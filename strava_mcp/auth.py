@@ -137,7 +137,7 @@ class StravaAuthenticator:
         }
         return f"{AUTHORIZE_URL}?{urlencode(params)}"
 
-    def setup_routes(self, app: FastAPI = None):
+    def setup_routes(self, app: FastAPI | None = None):
         """Set up the routes for authentication.
 
         Args:
@@ -146,6 +146,10 @@ class StravaAuthenticator:
         target_app = app or self.app
         if not target_app:
             raise ValueError("No FastAPI app provided")
+
+        # Make sure we have a valid FastAPI app
+        if not hasattr(target_app, "add_api_route"):
+            raise ValueError("Provided app does not appear to be a valid FastAPI instance")
 
         # Add route for the token exchange
         target_app.add_api_route(self.redirect_path, self.exchange_token, methods=["GET"])

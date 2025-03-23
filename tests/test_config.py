@@ -15,6 +15,7 @@ def test_strava_settings_defaults():
             client_id="test_client_id",
             client_secret="test_client_secret",
             refresh_token=None,
+            base_url="https://www.strava.com/api/v3",
         )
 
         assert settings.client_id == "test_client_id"
@@ -34,7 +35,12 @@ def test_strava_settings_from_env():
             "STRAVA_BASE_URL": "https://custom.strava.api/v3",
         },
     ):
-        settings = StravaSettings()
+        # Even with env vars, we need to provide required params for type checking
+        settings = StravaSettings(
+            client_id="",  # Will be overridden by env vars
+            client_secret="",  # Will be overridden by env vars
+            base_url="",  # Will be overridden by env vars
+        )
 
         assert settings.client_id == "env_client_id"
         assert settings.client_secret == "env_client_secret"
@@ -54,7 +60,9 @@ def test_strava_settings_override():
     ):
         settings = StravaSettings(
             client_id="direct_client_id",
+            client_secret="",  # Will be taken from env vars
             refresh_token="direct_refresh_token",
+            base_url="https://www.strava.com/api/v3",
         )
 
         # Direct values should override environment variables
@@ -65,6 +73,9 @@ def test_strava_settings_override():
 
 def test_strava_settings_model_config():
     """Test model configuration for StravaSettings."""
-    assert StravaSettings.model_config["env_prefix"] == "STRAVA_"
-    assert StravaSettings.model_config["env_file"] == ".env"
-    assert StravaSettings.model_config["env_file_encoding"] == "utf-8"
+    # Access model_config safely, with type handling
+    model_config = StravaSettings.model_config
+    # We can safely access these fields as we know they exist in our configuration
+    assert model_config.get("env_prefix") == "STRAVA_"
+    assert model_config.get("env_file") == ".env"
+    assert model_config.get("env_file_encoding") == "utf-8"

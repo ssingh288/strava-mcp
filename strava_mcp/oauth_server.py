@@ -122,8 +122,12 @@ class StravaOAuthServer:
 
     async def _run_server(self):
         """Run the uvicorn server."""
+        # Ensure app is not None before passing to uvicorn
+        if not self.app:
+            raise ValueError("FastAPI app not initialized")
+
         config = uvicorn.Config(
-            app=self.app,
+            app=self.app,  # The type checker should now be satisfied
             host=self.host,
             port=self.port,
             log_level="info",
