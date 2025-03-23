@@ -1,5 +1,8 @@
 # Strava MCP Server
 
+[![CI/CD Pipeline](https://github.com/yorrickjansen/strava-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/yorrickjansen/strava-mcp/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/yorrickjansen/strava-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/yorrickjansen/strava-mcp)
+
 A Model Context Protocol (MCP) server for interacting with the Strava API.
 
 ## Features
