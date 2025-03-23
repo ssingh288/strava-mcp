@@ -139,18 +139,38 @@ class StravaAPI:
         if self.access_token and self.token_expires_at and now < self.token_expires_at:
             return self.access_token
 
-        # If we don't have a refresh token, try to get one through auth flow
+        # If we don't have a refresh token, try to get one through standalone OAuth flow
         if not self.settings.refresh_token:
-            logger.warning("No refresh token available, attempting to start auth flow")
+            logger.warning("No refresh token available, launching standalone OAuth server")
             try:
-                self.settings.refresh_token = await self.start_auth_flow()
+                # Import here to avoid circular import
+                from strava_mcp.oauth_server import get_refresh_token_from_oauth
+                
+                logger.info("Starting OAuth flow to get refresh token")
+                self.settings.refresh_token = await get_refresh_token_from_oauth(
+                    self.settings.client_id,
+                    self.settings.client_secret
+                )
+                logger.info("Successfully obtained refresh token from OAuth flow")
             except Exception as e:
-                error_msg = f"Failed to start auth flow: {e}"
+                error_msg = f"Failed to get refresh token through OAuth flow: {e}"
                 logger.error(error_msg)
-                raise Exception(
-                    "No refresh token available and could not start auth flow. "
-                    "Please set STRAVA_REFRESH_TOKEN manually in your environment variables."
-                ) from e
+                
+                # Fall back to the original auth flow if available and requested
+                if self.app and not self.auth_flow_in_progress:
+                    logger.info("Falling back to MCP-integrated auth flow")
+                    try:
+                        self.settings.refresh_token = await self.start_auth_flow()
+                    except Exception as fallback_error:
+                        raise Exception(
+                            "No refresh token available and all auth flows failed. "
+                            "Please set STRAVA_REFRESH_TOKEN manually in your environment variables."
+                        ) from fallback_error
+                else:
+                    raise Exception(
+                        "No refresh token available and OAuth flow failed. "
+                        "Please set STRAVA_REFRESH_TOKEN manually in your environment variables."
+                    ) from e
 
         # Now that we have a refresh token, refresh the access token
         async with httpx.AsyncClient() as client:

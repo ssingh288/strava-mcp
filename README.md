@@ -46,20 +46,26 @@ Alternatively, you can create a `.env` file in the root directory with these var
 
 ### Authentication
 
-The server now includes an automatic OAuth flow:
+The server includes an automatic OAuth flow using a separate local web server:
 
-1. The first time you make a request to the Strava API, the server will check if you have a refresh token.
-2. If no refresh token is found, it will automatically open your browser to the Strava authorization page.
+1. The first time you make a request to the Strava API, the system checks if you have a refresh token.
+2. If no refresh token is found, it automatically starts a standalone OAuth server and opens your browser to the Strava authorization page.
 3. After authorizing the application in your browser, you'll be redirected to a local callback page.
-4. The server will automatically obtain and store the refresh token for future use.
+4. The server automatically obtains and stores the refresh token for future use.
 
-You can also set the refresh token manually if preferred:
+You can also get a refresh token manually by running:
+
+```bash
+python get_token.py
+```
+
+Or set the refresh token directly if you already have one:
 
 ```bash
 export STRAVA_REFRESH_TOKEN=your_refresh_token
 ```
 
-This approach eliminates the need to manually go through the authorization flow and copy/paste tokens.
+This approach eliminates the need to manually go through the authorization flow and copy/paste tokens. The OAuth flow uses your `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` environment variables.
 
 ## Usage
 
@@ -139,10 +145,14 @@ Gets the leaderboard for a specific segment.
   - `config.py`: Configuration settings using pydantic-settings
   - `models.py`: Pydantic models for Strava API entities
   - `api.py`: Low-level API client for Strava
+  - `auth.py`: Strava OAuth authentication implementation
+  - `oauth_server.py`: Standalone OAuth server implementation
   - `service.py`: Service layer for business logic
   - `server.py`: MCP server implementation
 - `tests/`: Unit tests
 - `main.py`: Entry point to run the server
+- `get_token.py`: Utility script to get a refresh token manually
+- `standalone_server.py`: Utility web server for testing OAuth flow
 
 ### Running Tests
 
