@@ -4,7 +4,6 @@ import pytest
 
 from strava_mcp.models import Activity, DetailedActivity, SegmentEffort
 
-
 # Patch the StravaOAuthServer._run_server method to prevent coroutine warnings
 # This must be at the module level before any imports that might create the coroutine
 with patch("strava_mcp.oauth_server.StravaOAuthServer._run_server", new_callable=AsyncMock):

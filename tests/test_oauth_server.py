@@ -4,10 +4,8 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import uvicorn
 from fastapi import FastAPI
 
-from strava_mcp.auth import StravaAuthenticator
 from strava_mcp.oauth_server import StravaOAuthServer, get_refresh_token_from_oauth
 
 
@@ -33,23 +31,23 @@ def oauth_server(client_credentials):
 async def test_initialize_server(oauth_server):
     """Test initializing the server."""
     # Mock the OAuth server's dependencies directly
-    with patch("strava_mcp.oauth_server.StravaAuthenticator") as MockAuthenticator:
+    with patch("strava_mcp.oauth_server.StravaAuthenticator") as mock_authenticator_class:
         with patch("asyncio.create_task") as mock_create_task:
             # Setup mocks
             mock_authenticator = MagicMock()
-            MockAuthenticator.return_value = mock_authenticator
+            mock_authenticator_class.return_value = mock_authenticator
             mock_task = MagicMock()
             mock_create_task.return_value = mock_task
-            
+
             # Test method
             await oauth_server._initialize_server()
-            
+
             # Verify FastAPI app was created
             assert oauth_server.app is not None
             assert oauth_server.app.title == "Strava OAuth"
-            
+
             # Verify authenticator was created and configured
-            MockAuthenticator.assert_called_once_with(
+            mock_authenticator_class.assert_called_once_with(
                 client_id=oauth_server.client_id,
                 client_secret=oauth_server.client_secret,
                 app=oauth_server.app,
@@ -57,13 +55,13 @@ async def test_initialize_server(oauth_server):
                 port=oauth_server.port,
             )
             assert oauth_server.authenticator == mock_authenticator
-            
+
             # Verify token future was stored in authenticator
             assert mock_authenticator.token_future is oauth_server.token_future
-            
+
             # Verify routes were set up
             mock_authenticator.setup_routes.assert_called_once_with(oauth_server.app)
-            
+
             # Verify server task was created
             mock_create_task.assert_called_once()
             assert oauth_server.server_task == mock_task
@@ -72,30 +70,30 @@ async def test_initialize_server(oauth_server):
 @pytest.mark.asyncio
 async def test_run_server(oauth_server):
     """Test running the server."""
-    with patch("uvicorn.Server") as MockServer:
-        with patch("uvicorn.Config") as MockConfig:
+    with patch("uvicorn.Server") as mock_server_class:
+        with patch("uvicorn.Config") as mock_config_class:
             # Setup mocks
             mock_server = AsyncMock()
-            MockServer.return_value = mock_server
+            mock_server_class.return_value = mock_server
             mock_config = MagicMock()
-            MockConfig.return_value = mock_config
-            
+            mock_config_class.return_value = mock_config
+
             # Create app
             oauth_server.app = FastAPI()
-            
+
             # Test method
             await oauth_server._run_server()
-            
+
             # Verify config was created correctly
-            MockConfig.assert_called_once_with(
+            mock_config_class.assert_called_once_with(
                 app=oauth_server.app,
                 host=oauth_server.host,
                 port=oauth_server.port,
                 log_level="info",
             )
-            
+
             # Verify server was created and run
-            MockServer.assert_called_once_with(mock_config)
+            mock_server_class.assert_called_once_with(mock_config)
             mock_server.serve.assert_called_once()
             assert oauth_server.server == mock_server
 
@@ -103,22 +101,22 @@ async def test_run_server(oauth_server):
 @pytest.mark.asyncio
 async def test_run_server_exception(oauth_server):
     """Test running the server with an exception."""
-    with patch("uvicorn.Server") as MockServer:
-        with patch("uvicorn.Config") as MockConfig:
+    with patch("uvicorn.Server") as mock_server_class:
+        with patch("uvicorn.Config") as mock_config_class:
             # Setup mocks
             mock_server = AsyncMock()
             mock_server.serve = AsyncMock(side_effect=Exception("Test error"))
-            MockServer.return_value = mock_server
+            mock_server_class.return_value = mock_server
             mock_config = MagicMock()
-            MockConfig.return_value = mock_config
-            
+            mock_config_class.return_value = mock_config
+
             # Create app and token future
             oauth_server.app = FastAPI()
             oauth_server.token_future = asyncio.Future()
-            
+
             # Test method
             await oauth_server._run_server()
-            
+
             # Verify token future has exception
             assert oauth_server.token_future.done()
             with pytest.raises(Exception, match="Test error"):
@@ -132,12 +130,12 @@ async def test_stop_server(oauth_server):
     oauth_server.server = MagicMock()
     oauth_server.server_task = MagicMock()
     oauth_server.server_task.done = MagicMock(return_value=False)
-    
+
     # Make asyncio.wait_for return immediately
     with patch("asyncio.wait_for", new=AsyncMock()) as mock_wait_for:
         # Test method
         await oauth_server._stop_server()
-        
+
         # Verify server was stopped
         assert oauth_server.server.should_exit is True
         mock_wait_for.assert_called_once_with(oauth_server.server_task, timeout=5.0)
@@ -150,12 +148,12 @@ async def test_stop_server_timeout(oauth_server):
     oauth_server.server = MagicMock()
     oauth_server.server_task = MagicMock()
     oauth_server.server_task.done = MagicMock(return_value=False)
-    
+
     # Make asyncio.wait_for raise TimeoutError
     with patch("asyncio.wait_for", new=AsyncMock(side_effect=TimeoutError())) as mock_wait_for:
         # Test method
         await oauth_server._stop_server()
-        
+
         # Verify server was stopped
         assert oauth_server.server.should_exit is True
         mock_wait_for.assert_called_once_with(oauth_server.server_task, timeout=5.0)
@@ -169,15 +167,15 @@ async def test_get_token(oauth_server):
     oauth_server._stop_server = AsyncMock()
     oauth_server.authenticator = MagicMock()
     oauth_server.authenticator.get_authorization_url = MagicMock(return_value="https://example.com/auth")
-    
+
     with patch("webbrowser.open") as mock_open:
         # Prepare token future
         oauth_server.token_future = asyncio.Future()
         oauth_server.token_future.set_result("test_refresh_token")
-        
+
         # Test method
         token = await oauth_server.get_token()
-        
+
         # Verify
         assert token == "test_refresh_token"
         oauth_server._initialize_server.assert_called_once()
@@ -193,11 +191,11 @@ async def test_get_token_no_authenticator(oauth_server):
     oauth_server._initialize_server = AsyncMock()
     oauth_server._stop_server = AsyncMock()
     oauth_server.authenticator = None
-    
+
     # Test method
     with pytest.raises(Exception, match="Authenticator not initialized"):
         await oauth_server.get_token()
-    
+
     # Verify
     oauth_server._initialize_server.assert_called_once()
     # The stop server is not called because we exit with exception before getting there
@@ -212,16 +210,16 @@ async def test_get_token_cancelled(oauth_server):
     oauth_server._stop_server = AsyncMock()
     oauth_server.authenticator = MagicMock()
     oauth_server.authenticator.get_authorization_url = MagicMock(return_value="https://example.com/auth")
-    
+
     with patch("webbrowser.open") as mock_open:
         # Prepare token future with cancellation
         oauth_server.token_future = asyncio.Future()
         oauth_server.token_future.cancel()
-        
+
         # Test method
         with pytest.raises(Exception, match="OAuth flow was cancelled"):
             await oauth_server.get_token()
-        
+
         # Verify
         oauth_server._initialize_server.assert_called_once()
         oauth_server.authenticator.get_authorization_url.assert_called_once()
@@ -237,16 +235,16 @@ async def test_get_token_exception(oauth_server):
     oauth_server._stop_server = AsyncMock()
     oauth_server.authenticator = MagicMock()
     oauth_server.authenticator.get_authorization_url = MagicMock(return_value="https://example.com/auth")
-    
+
     with patch("webbrowser.open") as mock_open:
         # Prepare token future with exception
         oauth_server.token_future = asyncio.Future()
         oauth_server.token_future.set_exception(Exception("Test error"))
-        
+
         # Test method
         with pytest.raises(Exception, match="OAuth flow failed: Test error"):
             await oauth_server.get_token()
-        
+
         # Verify
         oauth_server._initialize_server.assert_called_once()
         oauth_server.authenticator.get_authorization_url.assert_called_once()
@@ -257,22 +255,18 @@ async def test_get_token_exception(oauth_server):
 @pytest.mark.asyncio
 async def test_get_refresh_token_from_oauth(client_credentials):
     """Test get_refresh_token_from_oauth function."""
-    with patch("strava_mcp.oauth_server.StravaOAuthServer") as MockOAuthServer:
+    with patch("strava_mcp.oauth_server.StravaOAuthServer") as mock_oauth_server_class:
         # Setup mock
         mock_server = MagicMock()
         mock_server.get_token = AsyncMock(return_value="test_refresh_token")
-        MockOAuthServer.return_value = mock_server
-        
+        mock_oauth_server_class.return_value = mock_server
+
         # Test function
-        token = await get_refresh_token_from_oauth(
-            client_credentials["client_id"],
-            client_credentials["client_secret"]
-        )
-        
+        token = await get_refresh_token_from_oauth(client_credentials["client_id"], client_credentials["client_secret"])
+
         # Verify
         assert token == "test_refresh_token"
-        MockOAuthServer.assert_called_once_with(
-            client_credentials["client_id"],
-            client_credentials["client_secret"]
+        mock_oauth_server_class.assert_called_once_with(
+            client_credentials["client_id"], client_credentials["client_secret"]
         )
         mock_server.get_token.assert_called_once()

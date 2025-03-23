@@ -5,10 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 from httpx import Response
 
-from strava_mcp.auth import StravaAuthenticator, TokenResponse, get_strava_refresh_token
+from strava_mcp.auth import StravaAuthenticator, get_strava_refresh_token
 
 
 @pytest.fixture
@@ -51,7 +50,7 @@ def authenticator(client_credentials, fastapi_app):
 def test_get_authorization_url(authenticator):
     """Test getting the authorization URL."""
     url = authenticator.get_authorization_url()
-    
+
     # Check that the URL contains the expected parameters
     assert "https://www.strava.com/oauth/authorize" in url
     assert f"client_id={authenticator.client_id}" in url
@@ -64,7 +63,7 @@ def test_get_authorization_url(authenticator):
 def test_setup_routes(authenticator, fastapi_app):
     """Test setting up routes."""
     authenticator.setup_routes(fastapi_app)
-    
+
     # Check that the routes were added
     routes = [route.path for route in fastapi_app.routes]
     assert authenticator.redirect_path in routes
@@ -87,24 +86,24 @@ async def test_exchange_token_success(authenticator, mock_token_response):
         mock_response.status_code = 200
         mock_response.json.return_value = mock_token_response
         mock_client.return_value.__aenter__.return_value.post.return_value = mock_response
-        
+
         # Set up a future to receive the token
         authenticator.token_future = asyncio.Future()
-        
+
         # Call the handler
         response = await authenticator.exchange_token(code="test_code")
-        
+
         # Check response
         assert response.status_code == 200
         assert "Authorization successful" in response.body.decode()
-        
+
         # Check token future
         assert authenticator.token_future.done()
         assert await authenticator.token_future == "test_refresh_token"
-        
+
         # Check token was saved
         assert authenticator.refresh_token == "test_refresh_token"
-        
+
         # Verify correct API call
         mock_client.return_value.__aenter__.return_value.post.assert_called_once()
         args, kwargs = mock_client.return_value.__aenter__.return_value.post.call_args
@@ -124,20 +123,21 @@ async def test_exchange_token_failure(authenticator):
         mock_response.status_code = 400
         mock_response.text = "Invalid code"
         mock_client.return_value.__aenter__.return_value.post.return_value = mock_response
-        
+
         # Set up a future to receive the token
         authenticator.token_future = asyncio.Future()
-        
+
         # Call the handler
         response = await authenticator.exchange_token(code="invalid_code")
-        
+
         # Check response
         assert response.status_code == 200
         assert "Authorization failed" in response.body.decode()
-        
+
         # Check token future
         assert authenticator.token_future.done()
-        with pytest.raises(Exception):
+        # We expect a specific exception here, so using pytest.raises is appropriate
+        with pytest.raises(Exception):  # noqa: B017
             await authenticator.token_future
 
 
@@ -158,17 +158,20 @@ async def test_get_refresh_token(authenticator):
         with patch.object(authenticator, "get_authorization_url", return_value="https://example.com/auth"):
             # Set the future result after a delay
             authenticator.token_future = None  # Reset it so a new one is created
-            
+
             # Start the token request in background
             task = asyncio.create_task(authenticator.get_refresh_token())
-            
+
             # Wait a bit and set the result
             await asyncio.sleep(0.1)
+            # Initialize the token_future before setting result
+            if not authenticator.token_future:
+                authenticator.token_future = asyncio.Future()
             authenticator.token_future.set_result("test_refresh_token")
-            
+
             # Get the result
             token = await task
-            
+
             # Verify
             assert token == "test_refresh_token"
             mock_open.assert_called_once_with("https://example.com/auth")
@@ -181,17 +184,20 @@ async def test_get_refresh_token_no_browser(authenticator):
         with patch.object(authenticator, "get_authorization_url", return_value="https://example.com/auth"):
             # Set the future result after a delay
             authenticator.token_future = None  # Reset it so a new one is created
-            
+
             # Start the token request in background
             task = asyncio.create_task(authenticator.get_refresh_token(open_browser=False))
-            
+
             # Wait a bit and set the result
             await asyncio.sleep(0.1)
+            # Initialize the token_future before setting result
+            if not authenticator.token_future:
+                authenticator.token_future = asyncio.Future()
             authenticator.token_future.set_result("test_refresh_token")
-            
+
             # Get the result
             token = await task
-            
+
             # Verify
             assert token == "test_refresh_token"
             mock_open.assert_not_called()
@@ -204,17 +210,20 @@ async def test_get_refresh_token_browser_fails(authenticator):
         with patch.object(authenticator, "get_authorization_url", return_value="https://example.com/auth"):
             # Set the future result after a delay
             authenticator.token_future = None  # Reset it so a new one is created
-            
+
             # Start the token request in background
             task = asyncio.create_task(authenticator.get_refresh_token())
-            
+
             # Wait a bit and set the result
             await asyncio.sleep(0.1)
+            # Initialize the token_future before setting result
+            if not authenticator.token_future:
+                authenticator.token_future = asyncio.Future()
             authenticator.token_future.set_result("test_refresh_token")
-            
+
             # Get the result
             token = await task
-            
+
             # Verify
             assert token == "test_refresh_token"
             mock_open.assert_called_once_with("https://example.com/auth")
@@ -223,46 +232,37 @@ async def test_get_refresh_token_browser_fails(authenticator):
 @pytest.mark.asyncio
 async def test_get_strava_refresh_token(client_credentials):
     """Test get_strava_refresh_token function."""
-    with patch("strava_mcp.auth.StravaAuthenticator") as MockAuthenticator:
+    with patch("strava_mcp.auth.StravaAuthenticator") as mock_authenticator_class:
         # Setup mock
         mock_authenticator = MagicMock()
         mock_authenticator.get_refresh_token = AsyncMock(return_value="test_refresh_token")
         mock_authenticator.setup_routes = MagicMock()
-        MockAuthenticator.return_value = mock_authenticator
-        
+        mock_authenticator_class.return_value = mock_authenticator
+
         # Test without app
-        token = await get_strava_refresh_token(
-            client_credentials["client_id"], 
-            client_credentials["client_secret"]
-        )
-        
+        token = await get_strava_refresh_token(client_credentials["client_id"], client_credentials["client_secret"])
+
         # Verify
         assert token == "test_refresh_token"
-        MockAuthenticator.assert_called_once_with(
-            client_credentials["client_id"], 
-            client_credentials["client_secret"], 
-            None
+        mock_authenticator_class.assert_called_once_with(
+            client_credentials["client_id"], client_credentials["client_secret"], None
         )
         mock_authenticator.setup_routes.assert_not_called()
-        
+
         # Reset mocks
-        MockAuthenticator.reset_mock()
+        mock_authenticator_class.reset_mock()
         mock_authenticator.get_refresh_token.reset_mock()
         mock_authenticator.setup_routes.reset_mock()
-        
+
         # Test with app
         app = FastAPI()
         token = await get_strava_refresh_token(
-            client_credentials["client_id"], 
-            client_credentials["client_secret"],
-            app
+            client_credentials["client_id"], client_credentials["client_secret"], app
         )
-        
+
         # Verify
         assert token == "test_refresh_token"
-        MockAuthenticator.assert_called_once_with(
-            client_credentials["client_id"], 
-            client_credentials["client_secret"], 
-            app
+        mock_authenticator_class.assert_called_once_with(
+            client_credentials["client_id"], client_credentials["client_secret"], app
         )
         mock_authenticator.setup_routes.assert_called_once_with(app)

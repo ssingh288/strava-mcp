@@ -3,8 +3,6 @@
 import os
 from unittest import mock
 
-import pytest
-
 from strava_mcp.config import StravaSettings
 
 
@@ -16,7 +14,7 @@ def test_strava_settings_defaults():
             client_id="test_client_id",
             client_secret="test_client_secret",
         )
-        
+
         assert settings.client_id == "test_client_id"
         assert settings.client_secret == "test_client_secret"
         assert settings.refresh_token is None
@@ -35,7 +33,7 @@ def test_strava_settings_from_env():
         },
     ):
         settings = StravaSettings()
-        
+
         assert settings.client_id == "env_client_id"
         assert settings.client_secret == "env_client_secret"
         assert settings.refresh_token == "env_refresh_token"
@@ -56,7 +54,7 @@ def test_strava_settings_override():
             client_id="direct_client_id",
             refresh_token="direct_refresh_token",
         )
-        
+
         # Direct values should override environment variables
         assert settings.client_id == "direct_client_id"
         assert settings.client_secret == "env_client_secret"

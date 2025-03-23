@@ -1,10 +1,11 @@
 """Tests for the Strava models."""
 
-import pytest
 from datetime import datetime
+
+import pytest
 from pydantic import ValidationError
 
-from strava_mcp.models import Activity, DetailedActivity, Segment, SegmentEffort, ErrorResponse
+from strava_mcp.models import Activity, DetailedActivity, ErrorResponse, Segment, SegmentEffort
 
 
 @pytest.fixture
@@ -93,7 +94,7 @@ def segment_effort_data(segment_data):
 def test_activity_model(activity_data):
     """Test the Activity model."""
     activity = Activity(**activity_data)
-    
+
     assert activity.id == activity_data["id"]
     assert activity.name == activity_data["name"]
     assert activity.distance == activity_data["distance"]
@@ -109,9 +110,9 @@ def test_activity_model_optional_fields(activity_data):
     data = activity_data.copy()
     data.pop("average_heartrate")
     data.pop("max_heartrate")
-    
+
     activity = Activity(**data)
-    
+
     assert activity.average_heartrate is None
     assert activity.max_heartrate is None
 
@@ -120,7 +121,7 @@ def test_activity_model_missing_required_fields(activity_data):
     """Test the Activity model with missing required fields."""
     data = activity_data.copy()
     data.pop("id")  # Remove a required field
-    
+
     with pytest.raises(ValidationError):
         Activity(**data)
 
@@ -128,7 +129,7 @@ def test_activity_model_missing_required_fields(activity_data):
 def test_detailed_activity_model(detailed_activity_data):
     """Test the DetailedActivity model."""
     activity = DetailedActivity(**detailed_activity_data)
-    
+
     assert activity.id == detailed_activity_data["id"]
     assert activity.name == detailed_activity_data["name"]
     assert activity.description == detailed_activity_data["description"]
@@ -141,9 +142,9 @@ def test_detailed_activity_optional_fields(detailed_activity_data):
     data = detailed_activity_data.copy()
     data.pop("description")
     data.pop("calories")
-    
+
     activity = DetailedActivity(**data)
-    
+
     assert activity.description is None
     assert activity.calories is None
 
@@ -151,7 +152,7 @@ def test_detailed_activity_optional_fields(detailed_activity_data):
 def test_segment_model(segment_data):
     """Test the Segment model."""
     segment = Segment(**segment_data)
-    
+
     assert segment.id == segment_data["id"]
     assert segment.name == segment_data["name"]
     assert segment.activity_type == segment_data["activity_type"]
@@ -167,9 +168,9 @@ def test_segment_optional_fields(segment_data):
     data["city"] = "London"
     data["state"] = "Greater London"
     data["country"] = "United Kingdom"
-    
+
     segment = Segment(**data)
-    
+
     assert segment.city == "London"
     assert segment.state == "Greater London"
     assert segment.country == "United Kingdom"
@@ -179,7 +180,7 @@ def test_segment_missing_fields(segment_data):
     """Test the Segment model with missing required fields."""
     data = segment_data.copy()
     data.pop("id")  # Remove a required field
-    
+
     with pytest.raises(ValidationError):
         Segment(**data)
 
@@ -187,7 +188,7 @@ def test_segment_missing_fields(segment_data):
 def test_segment_effort_model(segment_effort_data):
     """Test the SegmentEffort model."""
     effort = SegmentEffort(**segment_effort_data)
-    
+
     assert effort.id == segment_effort_data["id"]
     assert effort.activity_id == segment_effort_data["activity_id"]
     assert effort.segment_id == segment_effort_data["segment_id"]
@@ -195,10 +196,12 @@ def test_segment_effort_model(segment_effort_data):
     assert effort.elapsed_time == segment_effort_data["elapsed_time"]
     assert effort.moving_time == segment_effort_data["moving_time"]
     assert effort.start_date == datetime.fromisoformat(segment_effort_data["start_date"].replace("Z", "+00:00"))
-    assert effort.start_date_local == datetime.fromisoformat(segment_effort_data["start_date_local"].replace("Z", "+00:00"))
+    assert effort.start_date_local == datetime.fromisoformat(
+        segment_effort_data["start_date_local"].replace("Z", "+00:00")
+    )
     assert effort.distance == segment_effort_data["distance"]
     assert effort.athlete == segment_effort_data["athlete"]
-    
+
     # Test nested segment object
     assert effort.segment.id == segment_effort_data["segment"]["id"]
     assert effort.segment.name == segment_effort_data["segment"]["name"]
@@ -214,9 +217,9 @@ def test_segment_effort_optional_fields(segment_effort_data):
     data["max_heartrate"] = 170.0
     data["pr_rank"] = 1
     data["achievements"] = [{"type": "overall", "rank": 1}]
-    
+
     effort = SegmentEffort(**data)
-    
+
     assert effort.average_watts == 200.0
     assert effort.device_watts is True
     assert effort.average_heartrate == 150.0
@@ -229,19 +232,16 @@ def test_segment_effort_missing_fields(segment_effort_data):
     """Test the SegmentEffort model with missing required fields."""
     data = segment_effort_data.copy()
     data.pop("segment")  # Remove a required field
-    
+
     with pytest.raises(ValidationError):
         SegmentEffort(**data)
 
 
 def test_error_response():
     """Test the ErrorResponse model."""
-    data = {
-        "message": "Resource not found",
-        "code": 404
-    }
-    
+    data = {"message": "Resource not found", "code": 404}
+
     error = ErrorResponse(**data)
-    
+
     assert error.message == "Resource not found"
     assert error.code == 404
