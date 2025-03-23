@@ -10,9 +10,11 @@ def test_strava_settings_defaults():
     """Test default settings for StravaSettings."""
     # Use required parameters only
     with mock.patch.dict(os.environ, {}, clear=True):
+        # Explicitly ensure we're not using STRAVA_REFRESH_TOKEN from environment
         settings = StravaSettings(
             client_id="test_client_id",
             client_secret="test_client_secret",
+            refresh_token=None,
         )
 
         assert settings.client_id == "test_client_id"
