@@ -26,9 +26,7 @@ async def main():
     if not client_id or not client_secret:
         if len(sys.argv) != 3:
             print("Usage: python get_token.py <client_id> <client_secret>")
-            print(
-                "Or set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET environment variables"
-            )
+            print("Or set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET environment variables")
             sys.exit(1)
         client_id = sys.argv[1]
         client_secret = sys.argv[2]

@@ -65,9 +65,7 @@ class StravaService:
             logger.error(f"Error getting activities: {str(e)}")
             raise
 
-    async def get_activity(
-        self, activity_id: int, include_all_efforts: bool = False
-    ) -> DetailedActivity:
+    async def get_activity(self, activity_id: int, include_all_efforts: bool = False) -> DetailedActivity:
         """Get a specific activity.
 
         Args:

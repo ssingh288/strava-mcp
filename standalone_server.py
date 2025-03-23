@@ -129,9 +129,7 @@ async def get_token(request: Request):
 
         # Wait for the token with a timeout
         try:
-            refresh_token = await asyncio.wait_for(
-                auth_future, timeout=300
-            )  # 5 minutes timeout
+            refresh_token = await asyncio.wait_for(auth_future, timeout=300)  # 5 minutes timeout
             settings.refresh_token = refresh_token
             return HTMLResponse(
                 f"""

@@ -78,8 +78,7 @@ class StravaAuthenticator:
                 self.token_future.set_result(token_data.refresh_token)
 
             return HTMLResponse(
-                "<h1>Authorization successful!</h1>"
-                "<p>You can close this tab and return to the application.</p>"
+                "<h1>Authorization successful!</h1>" "<p>You can close this tab and return to the application.</p>"
             )
         except Exception as e:
             logger.exception("Error during token exchange")
@@ -88,10 +87,7 @@ class StravaAuthenticator:
             if self.token_future and not self.token_future.done():
                 self.token_future.set_exception(e)
 
-            return HTMLResponse(
-                "<h1>Authorization failed!</h1>"
-                "<p>An error occurred. Please check the logs.</p>"
-            )
+            return HTMLResponse("<h1>Authorization failed!</h1>" "<p>An error occurred. Please check the logs.</p>")
 
     async def _exchange_code_for_token(self, code: str) -> TokenResponse:
         """Exchange the authorization code for tokens.
@@ -152,9 +148,7 @@ class StravaAuthenticator:
             raise ValueError("No FastAPI app provided")
 
         # Add route for the token exchange
-        target_app.add_api_route(
-            self.redirect_path, self.exchange_token, methods=["GET"]
-        )
+        target_app.add_api_route(self.redirect_path, self.exchange_token, methods=["GET"])
 
         # Add route to start the auth flow
         target_app.add_api_route("/auth", self.start_auth_flow, methods=["GET"])
@@ -190,9 +184,7 @@ class StravaAuthenticator:
             logger.info(f"Opening browser to authorize: {auth_url}")
             browser_opened = webbrowser.open(auth_url)
             if not browser_opened:
-                logger.warning(
-                    "Failed to open browser automatically. Please open the URL manually."
-                )
+                logger.warning("Failed to open browser automatically. Please open the URL manually.")
                 logger.info(f"Authorization URL: {auth_url}")
         else:
             logger.info(f"Please open this URL to authorize: {auth_url}")
@@ -201,9 +193,7 @@ class StravaAuthenticator:
         return await self.token_future
 
 
-async def get_strava_refresh_token(
-    client_id: str, client_secret: str, app: FastAPI | None = None
-) -> str:
+async def get_strava_refresh_token(client_id: str, client_secret: str, app: FastAPI | None = None) -> str:
     """Get a Strava refresh token via OAuth flow.
 
     Args:
@@ -239,9 +229,7 @@ if __name__ == "__main__":
     if not client_id or not client_secret:
         if len(sys.argv) != 3:
             print("Usage: python -m strava_mcp.auth <client_id> <client_secret>")
-            print(
-                "Or set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET environment variables"
-            )
+            print("Or set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET environment variables")
             sys.exit(1)
         client_id = sys.argv[1]
         client_secret = sys.argv[2]
@@ -269,9 +257,7 @@ if __name__ == "__main__":
 
         # For standalone operation, we'll print instructions
         print("\nStrava Authentication Server")
-        print(
-            f"Open http://{REDIRECT_HOST}:{REDIRECT_PORT}/ in your browser to start authentication"
-        )
+        print(f"Open http://{REDIRECT_HOST}:{REDIRECT_PORT}/ in your browser to start authentication")
 
         # Run the server (this will block until stopped)
         await server.serve()

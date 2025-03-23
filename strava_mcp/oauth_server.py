@@ -62,6 +62,8 @@ class StravaOAuthServer:
             await self._initialize_server()
 
         # Open browser to start authorization
+        if self.authenticator is None:
+            raise Exception("Authenticator not initialized")
         auth_url = self.authenticator.get_authorization_url()
         logger.info(f"Opening browser to authorize with Strava: {auth_url}")
         webbrowser.open(auth_url)
@@ -71,12 +73,12 @@ class StravaOAuthServer:
             refresh_token = await self.token_future
             logger.info("Successfully obtained refresh token")
             return refresh_token
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as err:
             logger.error("Token request was cancelled")
-            raise Exception("OAuth flow was cancelled")
+            raise Exception("OAuth flow was cancelled") from err
         except Exception as e:
             logger.exception("Error during OAuth flow")
-            raise Exception(f"OAuth flow failed: {str(e)}")
+            raise Exception(f"OAuth flow failed: {str(e)}") from e
         finally:
             # Stop the server once we have the token
             await self._stop_server()
@@ -173,18 +175,21 @@ if __name__ == "__main__":
     # If not provided as env vars, check command line args
     if not client_id or not client_secret:
         if len(sys.argv) != 3:
-            print(
-                "Usage: python -m strava_mcp.oauth_server <client_id> <client_secret>"
-            )
-            print(
-                "Or set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET environment variables"
-            )
+            print("Usage: python -m strava_mcp.oauth_server <client_id> <client_secret>")
+            print("Or set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET environment variables")
             sys.exit(1)
         client_id = sys.argv[1]
         client_secret = sys.argv[2]
 
+    # Ensure we have non-None values
+    if client_id is None or client_secret is None:
+        print("Error: Missing client_id or client_secret")
+        sys.exit(1)
+
     async def main():
         try:
+            # We've verified these aren't None above
+            assert client_id is not None and client_secret is not None
             token = await get_refresh_token_from_oauth(client_id, client_secret)
             print(f"\nSuccessfully obtained refresh token: {token}")
             print("\nYou can add this to your environment variables:")

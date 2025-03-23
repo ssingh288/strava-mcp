@@ -54,16 +54,12 @@ class StravaAPI:
             fastapi_app = self.app._app
 
         if not fastapi_app:
-            logger.warning(
-                "Could not get FastAPI app from the provided object, auth flow will not be available"
-            )
+            logger.warning("Could not get FastAPI app from the provided object, auth flow will not be available")
             return
 
         # Create authenticator and set up routes
         try:
-            authenticator = StravaAuthenticator(
-                self.settings.client_id, self.settings.client_secret, fastapi_app
-            )
+            authenticator = StravaAuthenticator(self.settings.client_id, self.settings.client_secret, fastapi_app)
             authenticator.setup_routes(fastapi_app)
 
             # Store authenticator for later use
@@ -108,9 +104,7 @@ class StravaAPI:
             )
 
             # Get the refresh token and open browser automatically
-            refresh_token = await self._authenticator.get_refresh_token(
-                open_browser=True
-            )
+            refresh_token = await self._authenticator.get_refresh_token(open_browser=True)
 
             # Store it in settings
             self.settings.refresh_token = refresh_token
@@ -137,9 +131,7 @@ class StravaAPI:
 
         # If we don't have a refresh token, try to get one through standalone OAuth flow
         if not self.settings.refresh_token:
-            logger.warning(
-                "No refresh token available, launching standalone OAuth server"
-            )
+            logger.warning("No refresh token available, launching standalone OAuth server")
             try:
                 # Import here to avoid circular import
                 from strava_mcp.oauth_server import get_refresh_token_from_oauth
@@ -220,21 +212,15 @@ class StravaAPI:
         response = await self._client.request(method, url, headers=headers, **kwargs)
 
         if not response.is_success:
-            error_msg = (
-                f"Strava API request failed: {response.status_code} - {response.text}"
-            )
+            error_msg = f"Strava API request failed: {response.status_code} - {response.text}"
             logger.error(error_msg)
 
             try:
                 error_data = response.json()
                 error = ErrorResponse(**error_data)
-                raise Exception(
-                    f"Strava API error: {error.message} (code: {error.code})"
-                )
+                raise Exception(f"Strava API error: {error.message} (code: {error.code})")
             except Exception as err:
-                msg = (
-                    f"Strava API failed: {response.status_code} - {response.text[:50]}"
-                )
+                msg = f"Strava API failed: {response.status_code} - {response.text[:50]}"
                 raise Exception(msg) from err
 
         return response
@@ -268,9 +254,7 @@ class StravaAPI:
 
         return [Activity(**activity) for activity in data]
 
-    async def get_activity(
-        self, activity_id: int, include_all_efforts: bool = False
-    ) -> DetailedActivity:
+    async def get_activity(self, activity_id: int, include_all_efforts: bool = False) -> DetailedActivity:
         """Get a specific activity.
 
         Args:
@@ -284,9 +268,7 @@ class StravaAPI:
         if include_all_efforts:
             params["include_all_efforts"] = "true"
 
-        response = await self._request(
-            "GET", f"/activities/{activity_id}", params=params
-        )
+        response = await self._request("GET", f"/activities/{activity_id}", params=params)
         data = response.json()
 
         return DetailedActivity(**data)

@@ -11,10 +11,6 @@ class StravaSettings(BaseSettings):
         None,
         description="Strava API refresh token (can be generated through auth flow)",
     )
-    base_url: str = Field(
-        "https://www.strava.com/api/v3", description="Strava API base URL"
-    )
+    base_url: str = Field("https://www.strava.com/api/v3", description="Strava API base URL")
 
-    model_config = SettingsConfigDict(
-        env_prefix="STRAVA_", env_file=".env", env_file_encoding="utf-8"
-    )
+    model_config = SettingsConfigDict(env_prefix="STRAVA_", env_file=".env", env_file_encoding="utf-8")
