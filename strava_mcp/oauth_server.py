@@ -3,14 +3,13 @@
 import asyncio
 import logging
 import os
-import threading
 import webbrowser
 from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
 
-from strava_mcp.auth import StravaAuthenticator, REDIRECT_HOST, REDIRECT_PORT
+from strava_mcp.auth import REDIRECT_HOST, REDIRECT_PORT, StravaAuthenticator
 
 # Configure logging
 logging.basicConfig(
@@ -24,11 +23,11 @@ class StravaOAuthServer:
     """A standalone server for handling Strava OAuth flow."""
 
     def __init__(
-        self, 
-        client_id: str, 
+        self,
+        client_id: str,
         client_secret: str,
         host: str = REDIRECT_HOST,
-        port: int = REDIRECT_PORT
+        port: int = REDIRECT_PORT,
     ):
         """Initialize the OAuth server.
 
@@ -84,6 +83,7 @@ class StravaOAuthServer:
 
     async def _initialize_server(self):
         """Initialize the FastAPI server for OAuth flow."""
+
         @asynccontextmanager
         async def lifespan(app: FastAPI):
             yield
@@ -114,7 +114,7 @@ class StravaOAuthServer:
 
         # Start server in a separate task
         self.server_task = asyncio.create_task(self._run_server())
-        
+
         # Wait a moment for the server to start
         await asyncio.sleep(0.5)
 
@@ -141,7 +141,7 @@ class StravaOAuthServer:
             if self.server_task:
                 try:
                     await asyncio.wait_for(self.server_task, timeout=5.0)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning("Server shutdown timed out")
 
 
@@ -165,20 +165,24 @@ async def get_refresh_token_from_oauth(client_id: str, client_secret: str) -> st
 if __name__ == "__main__":
     # This allows running this file directly to get a refresh token
     import sys
-    
+
     # Check if client_id and client_secret are provided as env vars
     client_id = os.environ.get("STRAVA_CLIENT_ID")
     client_secret = os.environ.get("STRAVA_CLIENT_SECRET")
-    
+
     # If not provided as env vars, check command line args
     if not client_id or not client_secret:
         if len(sys.argv) != 3:
-            print("Usage: python -m strava_mcp.oauth_server <client_id> <client_secret>")
-            print("Or set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET environment variables")
+            print(
+                "Usage: python -m strava_mcp.oauth_server <client_id> <client_secret>"
+            )
+            print(
+                "Or set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET environment variables"
+            )
             sys.exit(1)
         client_id = sys.argv[1]
         client_secret = sys.argv[2]
-    
+
     async def main():
         try:
             token = await get_refresh_token_from_oauth(client_id, client_secret)

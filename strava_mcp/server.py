@@ -36,11 +36,11 @@ async def lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
 
     # Use the FastMCP server itself as we'll adapt our StravaService to work with it
     fastapi_app = server
-    
+
     # Initialize the Strava service with the FastAPI app (or None)
     service = StravaService(settings, fastapi_app)
     logger.info("Initialized Strava service")
-    
+
     # Set up authentication routes and initialize
     await service.initialize()
     logger.info("Service initialization completed")
@@ -139,5 +139,3 @@ async def get_activity_segments(
     except Exception as e:
         logger.error(f"Error in get_activity_segments tool: {str(e)}")
         raise
-
-

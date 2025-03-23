@@ -137,8 +137,6 @@ class SegmentEffort(BaseModel):
     segment: Segment = Field(..., description="The segment")
 
 
-
-
 class ErrorResponse(BaseModel):
     """Represents an error response from the Strava API."""
 

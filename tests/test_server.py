@@ -168,5 +168,3 @@ async def test_get_activity_segments(mock_ctx, mock_service):
     assert len(result) == 1
     assert result[0]["id"] == mock_segment.id
     assert result[0]["name"] == mock_segment.name
-
-

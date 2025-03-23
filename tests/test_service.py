@@ -163,5 +163,3 @@ async def test_get_activity_segments(service, mock_api):
     # Verify response
     assert len(segments) == 1
     assert segments[0] == mock_segment
-
-

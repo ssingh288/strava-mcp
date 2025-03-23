@@ -175,5 +175,3 @@ async def test_get_activity(api, mock_response):
     assert activity.id == activity_data["id"]
     assert activity.name == activity_data["name"]
     assert activity.description == activity_data["description"]
-
-
