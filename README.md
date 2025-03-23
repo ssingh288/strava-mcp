@@ -37,12 +37,21 @@ uv install
 
 Create a Strava app at https://www.strava.com/settings/api and obtain your client ID and client secret.
 
+You can set environment variables directly:
+
 ```bash
 export STRAVA_CLIENT_ID=your_client_id  # from https://www.strava.com/settings/api
 export STRAVA_CLIENT_SECRET=your_client_secret  # from https://www.strava.com/settings/api
 ```
 
-Alternatively, you can create a `.env` file in the root directory with these variables.
+Alternatively, you can create a `.env` file in the root directory with these variables:
+
+```
+STRAVA_CLIENT_ID=your_client_id
+STRAVA_CLIENT_SECRET=your_client_secret
+```
+
+The application will automatically load variables from the `.env` file if it exists.
 
 ### Authentication
 
@@ -63,6 +72,12 @@ Or set the refresh token directly if you already have one:
 
 ```bash
 export STRAVA_REFRESH_TOKEN=your_refresh_token
+```
+
+You can also add the refresh token to your `.env` file:
+
+```
+STRAVA_REFRESH_TOKEN=your_refresh_token
 ```
 
 This approach eliminates the need to manually go through the authorization flow and copy/paste tokens. The OAuth flow uses your `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` environment variables.

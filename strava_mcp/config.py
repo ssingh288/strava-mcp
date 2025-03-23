@@ -16,4 +16,8 @@ class StravaSettings(BaseSettings):
         "https://www.strava.com/api/v3", description="Strava API base URL"
     )
 
-    model_config = SettingsConfigDict(env_prefix="STRAVA_")
+    model_config = SettingsConfigDict(
+        env_prefix="STRAVA_",
+        env_file=".env",
+        env_file_encoding="utf-8"
+    )
