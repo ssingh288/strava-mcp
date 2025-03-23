@@ -7,36 +7,43 @@ on:
     branches: [ main, master ]
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
-    
     steps:
     - uses: actions/checkout@v4
-    
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: "3.13"
-        
     - name: Install uv
       run: |
         pip install --upgrade pip
         pip install uv
-    
     - name: Install dependencies
       run: |
         uv sync
-      
-    - name: Install pytest-cov
+    - name: Lint with ruff
       run: |
-        uv pip install pytest-cov
-        
-    - name: Run linting
+        uv run ruff check .
+        uv run ruff format --check .
+        uv run isort --check-only --profile black .
+        uv run pyright
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    - name: Install uv
       run: |
-        uv pip install ruff
-        ruff check .
-        ruff format --check .
-        
+        pip install --upgrade pip
+        pip install uv
+    - name: Install dependencies
+      run: |
+        uv sync
     - name: Create dummy .env file for tests
       run: |
         echo "STRAVA_CLIENT_ID=test_client_id" > .env
