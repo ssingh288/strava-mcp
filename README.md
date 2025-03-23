@@ -170,7 +170,6 @@ Gets the leaderboard for a specific segment.
 - `tests/`: Unit tests
 - `main.py`: Entry point to run the server
 - `get_token.py`: Utility script to get a refresh token manually
-- `standalone_server.py`: Utility web server for testing OAuth flow
 
 ### Running Tests
 
