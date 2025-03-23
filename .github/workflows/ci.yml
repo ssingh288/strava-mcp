@@ -21,7 +21,7 @@ jobs:
         pip install uv
     - name: Install dependencies
       run: |
-        uv sync
+        uv sync --all
     - name: Lint with ruff
       run: |
         uv run ruff check .
@@ -42,7 +42,7 @@ jobs:
         pip install uv
     - name: Install dependencies
       run: |
-        uv sync
+        uv sync --all
     - name: Create dummy .env file for tests
       run: |
         echo "STRAVA_CLIENT_ID=test_client_id" > .env
@@ -78,7 +78,7 @@ jobs:
     
     - name: Install dependencies
       run: |
-        uv sync
+        uv sync --all
         
     - name: Create dummy .env file for server
       run: |
