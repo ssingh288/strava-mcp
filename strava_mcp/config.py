@@ -8,7 +8,7 @@ class StravaSettings(BaseSettings):
     client_id: str = Field(..., description="Strava API client ID")
     client_secret: str = Field(..., description="Strava API client secret")
     refresh_token: str | None = Field(
-        None,
+        default=None,
         description="Strava API refresh token (can be generated through auth flow)",
     )
     base_url: str = Field("https://www.strava.com/api/v3", description="Strava API base URL")
