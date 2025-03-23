@@ -1,5 +1,9 @@
+from strava_mcp.server import mcp
+
+
 def main():
-    print("Hello from strava!")
+    """Run the Strava MCP server."""
+    mcp.run()
 
 
 if __name__ == "__main__":
