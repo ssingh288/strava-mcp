@@ -33,6 +33,9 @@ No resources are to be exposed for now.
 5. Write unit tests for the code, and add them to the tests directory.
 6. Code must be written in the strava_mcp directory.
 7. Implement logging of errors and warnings.
+8. Use pydantic for Model Driven Development.
+9. Use pydantic-settings for configuration.
+10. Separate logic, api, and data access layers.
 
 
 
