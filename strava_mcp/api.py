@@ -71,6 +71,9 @@ class StravaAPI:
             self.token_expires_at = data["expires_at"]
 
             logger.info("Successfully refreshed access token")
+            # TODO remove this, do not log secrets
+            # logger.info(f"Token expires at: {self.token_expires_at}")
+            # logger.info(f"Token value: {self.access_token}")
             return self.access_token
 
     async def _request(self, method: str, endpoint: str, **kwargs) -> Response:
@@ -181,7 +184,23 @@ class StravaAPI:
         if not activity.segment_efforts:
             return []
 
-        return [SegmentEffort.parse_obj(effort) for effort in activity.segment_efforts]
+        # Add missing required fields before validation
+        segment_efforts = []
+        for effort in activity.segment_efforts:
+            # Add activity_id which is required by the model
+            effort["activity_id"] = activity_id
+            # Add segment_id which is required by the model
+            effort["segment_id"] = effort["segment"]["id"]
+            # Add total_elevation_gain to the segment if it's missing
+            if "total_elevation_gain" not in effort["segment"]:
+                # Calculate from elevation high and low or set to 0
+                elev_high = effort["segment"].get("elevation_high", 0)
+                elev_low = effort["segment"].get("elevation_low", 0)
+                effort["segment"]["total_elevation_gain"] = max(0, elev_high - elev_low)
+
+            segment_efforts.append(SegmentEffort.model_validate(effort))
+
+        return segment_efforts
 
     async def get_segment_leaderboard(
         self,
