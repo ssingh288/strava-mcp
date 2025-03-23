@@ -35,9 +35,40 @@ uv install
 
 3. Set up environment variables with your Strava API credentials:
 
+
+Follow the instructions in https://developers.strava.com/docs/getting-started/#curl to get your credentials.
+
+Create a Strava app:
+
 ```bash
-export STRAVA_CLIENT_ID=your_client_id
-export STRAVA_CLIENT_SECRET=your_client_secret
+export STRAVA_CLIENT_ID=your_client_id  ## from https://www.strava.com/settings/api
+export STRAVA_CLIENT_SECRET=your_client_secret  ## from https://www.strava.com/settings/api
+```
+
+Then, to get the refresh token with appropriate scopes, follow the instructions in https://developers.strava.com/docs/getting-started/#curl.
+Please not scope is set to `read_all` so we can get all the data, not only basic profile information.
+
+Access the following URL with your browser to authorize the app:
+
+```bash
+echo "http://www.strava.com/oauth/authorize?client_id=$STRAVA_CLIENT_ID&response_type=code&redirect_uri=http://localhost/exchange_token&approval_prompt=force&scope=activity:read_all,read_all" | pbcopy
+```
+
+
+Then, you will be redirected to a URL with a code. Copy the code and paste it into the following command:
+
+```bash
+CODE=your_code  ## from the URL
+http POST https://www.strava.com/oauth/token \
+  client_id=$STRAVA_CLIENT_ID \
+  client_secret=$STRAVA_CLIENT_SECRET \
+  code=$CODE \
+  grant_type=authorization_code
+```
+
+This will return a JSON response with the refresh token. Copy the refresh token and paste it into the following command:
+
+```bash
 export STRAVA_REFRESH_TOKEN=your_refresh_token
 ```
 
