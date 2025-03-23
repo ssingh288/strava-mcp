@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from strava_mcp.models import Activity, DetailedActivity, Leaderboard, SegmentEffort
+from strava_mcp.models import Activity, DetailedActivity, SegmentEffort
 
 
 class MockContext:
@@ -19,7 +19,6 @@ def mock_service():
     mock.get_activities = AsyncMock()
     mock.get_activity = AsyncMock()
     mock.get_activity_segments = AsyncMock()
-    mock.get_segment_leaderboard = AsyncMock()
     return mock
 
 
@@ -171,45 +170,3 @@ async def test_get_activity_segments(mock_ctx, mock_service):
     assert result[0]["name"] == mock_segment.name
 
 
-@pytest.mark.asyncio
-async def test_get_segment_leaderboard(mock_ctx, mock_service):
-    # Setup mock data
-    mock_leaderboard = Leaderboard(
-        entry_count=100,
-        effort_count=200,
-        kom_type="kom",
-        entries=[
-            {
-                "athlete_name": "John Doe",
-                "athlete_id": 123,
-                "athlete_gender": "M",
-                "average_hr": 160,
-                "average_watts": 250,
-                "distance": 1000,
-                "elapsed_time": 180,
-                "moving_time": 180,
-                "start_date": "2023-01-01T10:00:00Z",
-                "start_date_local": "2023-01-01T10:00:00Z",
-                "activity_id": 12345,
-                "effort_id": 67890,
-                "rank": 1,
-            }
-        ],
-    )
-    mock_service.get_segment_leaderboard.return_value = mock_leaderboard
-
-    # Test tool
-    from strava_mcp.server import get_segment_leaderboard
-
-    result = await get_segment_leaderboard(mock_ctx, 12345)
-
-    # Verify service call
-    mock_service.get_segment_leaderboard.assert_called_once_with(
-        12345, None, None, None, None, None, None, None, 1, 30
-    )
-
-    # Verify result
-    assert result["entry_count"] == mock_leaderboard.entry_count
-    assert result["effort_count"] == mock_leaderboard.effort_count
-    assert result["kom_type"] == mock_leaderboard.kom_type
-    assert len(result["entries"]) == 1

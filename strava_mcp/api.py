@@ -9,7 +9,6 @@ from strava_mcp.models import (
     Activity,
     DetailedActivity,
     ErrorResponse,
-    Leaderboard,
     SegmentEffort,
 )
 
@@ -202,62 +201,3 @@ class StravaAPI:
 
         return segment_efforts
 
-    async def get_segment_leaderboard(
-        self,
-        segment_id: int,
-        gender: str | None = None,
-        age_group: int | None = None,
-        weight_class: int | None = None,
-        following: bool | None = None,
-        club_id: int | None = None,
-        date_range: int | None = None,
-        context_entries: int | None = None,
-        page: int = 1,
-        per_page: int = 30,
-    ) -> Leaderboard:
-        """Get the leaderboard for a given segment.
-
-        Args:
-            segment_id: The ID of the segment
-            gender: Filter by gender ('M' or 'F')
-            age_group: Filter by age group
-            weight_class: Filter by weight class
-            following: Filter by friends of the authenticated athlete
-            club_id: Filter by club
-            date_range: Filter by date range
-            context_entries: Number of context entries
-            page: Page number
-            per_page: Number of items per page
-
-        Returns:
-            The segment leaderboard
-        """
-        params = {"page": page, "per_page": per_page}
-
-        if gender:
-            # Convert gender string to integer code
-            gender_code = 0  # Default
-            if gender.upper() == "M":
-                gender_code = 1
-            elif gender.upper() == "F":
-                gender_code = 2
-            params["gender"] = gender_code
-        if age_group:
-            params["age_group"] = int(age_group)
-        if weight_class:
-            params["weight_class"] = int(weight_class)
-        if following is not None:
-            params["following"] = 1 if following else 0
-        if club_id:
-            params["club_id"] = club_id
-        if date_range:
-            params["date_range"] = int(date_range)
-        if context_entries:
-            params["context_entries"] = context_entries
-
-        response = await self._request(
-            "GET", f"/segments/{segment_id}/leaderboard", params=params
-        )
-        data = response.json()
-
-        return Leaderboard(**data)

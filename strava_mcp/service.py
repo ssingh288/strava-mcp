@@ -2,7 +2,7 @@ import logging
 
 from strava_mcp.api import StravaAPI
 from strava_mcp.config import StravaSettings
-from strava_mcp.models import Activity, DetailedActivity, Leaderboard, SegmentEffort
+from strava_mcp.models import Activity, DetailedActivity, SegmentEffort
 
 logger = logging.getLogger(__name__)
 
@@ -89,54 +89,3 @@ class StravaService:
             logger.error(f"Error getting segments for activity {activity_id}: {str(e)}")
             raise
 
-    async def get_segment_leaderboard(
-        self,
-        segment_id: int,
-        gender: str | None = None,
-        age_group: int | None = None,
-        weight_class: int | None = None,
-        following: bool | None = None,
-        club_id: int | None = None,
-        date_range: int | None = None,
-        context_entries: int | None = None,
-        page: int = 1,
-        per_page: int = 30,
-    ) -> Leaderboard:
-        """Get the leaderboard for a given segment.
-
-        Args:
-            segment_id: The ID of the segment
-            gender: Filter by gender ('M' or 'F')
-            age_group: Filter by age group
-            weight_class: Filter by weight class
-            following: Filter by friends of the authenticated athlete
-            club_id: Filter by club
-            date_range: Filter by date range
-            context_entries: Number of context entries
-            page: Page number
-            per_page: Number of items per page
-
-        Returns:
-            The segment leaderboard
-        """
-        try:
-            logger.info(f"Getting leaderboard for segment {segment_id}")
-            leaderboard = await self.api.get_segment_leaderboard(
-                segment_id,
-                gender,
-                age_group,
-                weight_class,
-                following,
-                club_id,
-                date_range,
-                context_entries,
-                page,
-                per_page,
-            )
-            logger.info(f"Retrieved leaderboard with {leaderboard.entry_count} entries")
-            return leaderboard
-        except Exception as e:
-            logger.error(
-                f"Error getting leaderboard for segment {segment_id}: {str(e)}"
-            )
-            raise

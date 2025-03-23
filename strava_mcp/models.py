@@ -137,44 +137,6 @@ class SegmentEffort(BaseModel):
     segment: Segment = Field(..., description="The segment")
 
 
-class Leaderboard(BaseModel):
-    """Represents a Strava segment leaderboard."""
-
-    entry_count: int = Field(
-        ..., description="The total number of entries for this leaderboard"
-    )
-    effort_count: int = Field(
-        ..., description="The total number of efforts for this leaderboard"
-    )
-    kom_type: str | None = Field(None, description="KOM/QOM type")
-    entries: list[dict] = Field(..., description="List of leaderboard entries")
-
-
-class LeaderboardEntry(BaseModel):
-    """Represents a Strava segment leaderboard entry."""
-
-    athlete_name: str = Field(..., description="The name of the athlete")
-    athlete_id: int = Field(..., description="The unique identifier of the athlete")
-    athlete_gender: str = Field(..., description="The gender of the athlete")
-    average_hr: float | None = Field(
-        None, description="The athlete's average heart rate"
-    )
-    average_watts: float | None = Field(None, description="The athlete's average watts")
-    distance: float = Field(..., description="The distance in meters")
-    elapsed_time: int = Field(..., description="The elapsed time in seconds")
-    moving_time: int = Field(..., description="The moving time in seconds")
-    start_date: datetime = Field(..., description="The timestamp of the effort in UTC")
-    start_date_local: datetime = Field(
-        ..., description="The timestamp of the effort in local time"
-    )
-    activity_id: int = Field(..., description="The unique identifier of the activity")
-    effort_id: int = Field(
-        ..., description="The unique identifier of the segment effort"
-    )
-    rank: int = Field(
-        ..., description="The rank of the effort on the segment leaderboard"
-    )
-    neighborhood_index: int | None = Field(None, description="Neighborhood index")
 
 
 class ErrorResponse(BaseModel):

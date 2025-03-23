@@ -5,7 +5,7 @@ import pytest
 
 from strava_mcp.api import StravaAPI
 from strava_mcp.config import StravaSettings
-from strava_mcp.models import Activity, DetailedActivity, Leaderboard
+from strava_mcp.models import Activity, DetailedActivity
 
 
 @pytest.fixture
@@ -177,47 +177,3 @@ async def test_get_activity(api, mock_response):
     assert activity.description == activity_data["description"]
 
 
-@pytest.mark.asyncio
-async def test_get_segment_leaderboard(api, mock_response):
-    # Setup mock response
-    leaderboard_data = {
-        "entry_count": 100,
-        "effort_count": 200,
-        "kom_type": "kom",
-        "entries": [
-            {
-                "athlete_name": "John Doe",
-                "athlete_id": 123,
-                "athlete_gender": "M",
-                "average_hr": 160,
-                "average_watts": 250,
-                "distance": 1000,
-                "elapsed_time": 180,
-                "moving_time": 180,
-                "start_date": "2023-01-01T10:00:00Z",
-                "start_date_local": "2023-01-01T10:00:00Z",
-                "activity_id": 12345,
-                "effort_id": 67890,
-                "rank": 1,
-            }
-        ],
-    }
-    mock_response.json.return_value = leaderboard_data
-    api._client.request.return_value = mock_response
-
-    # Test get_segment_leaderboard
-    leaderboard = await api.get_segment_leaderboard(12345)
-
-    # Verify request
-    api._client.request.assert_called_once()
-    args, kwargs = api._client.request.call_args
-    assert args[0] == "GET"
-    assert args[1] == "/segments/12345/leaderboard"
-    assert kwargs["params"] == {"page": 1, "per_page": 30}
-
-    # Verify response
-    assert isinstance(leaderboard, Leaderboard)
-    assert leaderboard.entry_count == leaderboard_data["entry_count"]
-    assert leaderboard.effort_count == leaderboard_data["effort_count"]
-    assert leaderboard.kom_type == leaderboard_data["kom_type"]
-    assert len(leaderboard.entries) == 1
