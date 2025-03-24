@@ -126,19 +126,22 @@ class StravaOAuthServer:
         if not self.app:
             raise ValueError("FastAPI app not initialized")
 
-        config = uvicorn.Config(
-            app=self.app,  # The type checker should now be satisfied
-            host=self.host,
-            port=self.port,
-            log_level="info",
-        )
-        self.server = uvicorn.Server(config)
+        # Use fixed port 3008
         try:
+            config = uvicorn.Config(
+                app=self.app,
+                host=self.host,
+                port=self.port,
+                log_level="info",
+            )
+            
+            self.server = uvicorn.Server(config)
             await self.server.serve()
         except Exception as e:
             logger.exception("Error running OAuth server")
             if not self.token_future.done():
                 self.token_future.set_exception(e)
+            raise
 
     async def _stop_server(self):
         """Stop the uvicorn server."""

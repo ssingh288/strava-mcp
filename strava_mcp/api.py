@@ -19,12 +19,11 @@ class StravaAPI:
 
         Args:
             settings: Strava API settings
-            app: FastAPI app for auth routes (optional)
+            app: FastAPI app (not used, kept for backward compatibility)
         """
         self.settings = settings
         self.access_token = None
         self.token_expires_at = None
-        self.app = app
         self.auth_flow_in_progress = False
         self._client = httpx.AsyncClient(
             base_url=settings.base_url,
@@ -36,86 +35,26 @@ class StravaAPI:
         await self._client.aclose()
 
     async def setup_auth_routes(self):
-        """Set up authentication routes if app is available."""
-        if not self.app:
-            logger.warning("No FastAPI app provided, skipping auth routes setup")
-            return
-
-        from strava_mcp.auth import StravaAuthenticator
-
-        # Check if we have a FastAPI app or a FastMCP server
-        fastapi_app = None
-
-        # If it's a FastAPI app, use it directly
-        if hasattr(self.app, "add_api_route"):
-            fastapi_app = self.app
-        # If it's a FastMCP server, try to get its underlying app
-        # FastMCP doesn't have a public API for this, but we can use type checking
-        # to treat it as a FastAPI instance as it extends FastAPI
-        else:
-            # Just use the app itself since it should be a FastAPI instance or subclass
-            fastapi_app = self.app
-
-        if not fastapi_app:
-            logger.warning("Could not get FastAPI app from the provided object, auth flow will not be available")
-            return
-
-        # Create authenticator and set up routes
-        try:
-            authenticator = StravaAuthenticator(self.settings.client_id, self.settings.client_secret, fastapi_app)
-            authenticator.setup_routes(fastapi_app)
-
-            # Store authenticator for later use
-            self._authenticator = authenticator
-            logger.info("Successfully set up Strava auth routes")
-        except Exception as e:
-            logger.error(f"Error setting up auth routes: {e}")
-            return
+        """This method is deprecated and does nothing now.
+        Standalone OAuth server is used instead.
+        """
+        logger.info("Using standalone OAuth server instead of integrated auth routes")
+        return
 
     async def start_auth_flow(self) -> str:
-        """Start the auth flow to get a refresh token.
+        """This method is deprecated. 
+        The standalone OAuth server is used instead via _ensure_token().
 
         Returns:
             The refresh token
 
         Raises:
-            Exception: If the auth flow fails or is not available
+            Exception: Always raises exception directing to use standalone flow
         """
-        if not self.app:
-            raise Exception(
-                "No FastAPI app available for auth flow. "
-                "Please set STRAVA_REFRESH_TOKEN manually in your environment variables."
-            )
-
-        authenticator = getattr(self, "_authenticator", None)
-        if not authenticator:
-            raise Exception(
-                "Auth routes not set up or setup failed. "
-                "Please set STRAVA_REFRESH_TOKEN manually in your environment variables."
-            )
-
-        if self.auth_flow_in_progress:
-            raise Exception("Auth flow already in progress")
-
-        self.auth_flow_in_progress = True
-        try:
-            # Display instructions to the user and open browser
-            auth_url = self._authenticator.get_authorization_url()
-            logger.info(
-                f"\nNo refresh token available. Opening browser for authorization. "
-                f"If browser doesn't open, please visit this URL manually: {auth_url}"
-            )
-
-            # Get the refresh token and open browser automatically
-            refresh_token = await self._authenticator.get_refresh_token(open_browser=True)
-
-            # Store it in settings
-            self.settings.refresh_token = refresh_token
-
-            logger.info("Successfully obtained refresh token")
-            return refresh_token
-        finally:
-            self.auth_flow_in_progress = False
+        raise Exception(
+            "Integrated auth flow is no longer supported. "
+            "The standalone OAuth server will be used automatically when needed."
+        )
 
     async def _ensure_token(self) -> str:
         """Ensure we have a valid access token.
@@ -148,21 +87,11 @@ class StravaAPI:
                 error_msg = f"Failed to get refresh token through OAuth flow: {e}"
                 logger.error(error_msg)
 
-                # Fall back to the original auth flow if available and requested
-                if self.app and not self.auth_flow_in_progress:
-                    logger.info("Falling back to MCP-integrated auth flow")
-                    try:
-                        self.settings.refresh_token = await self.start_auth_flow()
-                    except Exception as fallback_error:
-                        raise Exception(
-                            "No refresh token available and all auth flows failed. "
-                            "Please set STRAVA_REFRESH_TOKEN manually in your environment variables."
-                        ) from fallback_error
-                else:
-                    raise Exception(
-                        "No refresh token available and OAuth flow failed. "
-                        "Please set STRAVA_REFRESH_TOKEN manually in your environment variables."
-                    ) from e
+                # No fallback to MCP-integrated auth flow anymore
+                raise Exception(
+                    "No refresh token available and OAuth flow failed. "
+                    "Please set STRAVA_REFRESH_TOKEN manually in your environment variables."
+                ) from e
 
         # Now that we have a refresh token, refresh the access token
         async with httpx.AsyncClient() as client:

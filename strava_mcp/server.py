@@ -29,11 +29,14 @@ async def lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     """
     # Load settings from environment variables
     try:
-        settings = StravaSettings(
-            client_id="",  # Will be overridden by env vars
-            client_secret="",  # Will be overridden by env vars
-            base_url="https://www.strava.com/api/v3",
-        )
+        # Let StravaSettings load values directly from env vars
+        settings = StravaSettings()
+        
+        if not settings.client_id:
+            raise ValueError("STRAVA_CLIENT_ID environment variable is not set")
+        if not settings.client_secret:
+            raise ValueError("STRAVA_CLIENT_SECRET environment variable is not set")
+            
         logger.info("Loaded Strava API settings")
     except Exception as e:
         logger.error(f"Failed to load Strava API settings: {str(e)}")

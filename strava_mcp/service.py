@@ -23,15 +23,12 @@ class StravaService:
         self.api = StravaAPI(settings, app)
 
     async def initialize(self):
-        """Initialize the service, setting up auth routes if needed."""
-        # Set up authentication routes if app is available
-        await self.api.setup_auth_routes()
-
-        # If we don't have a refresh token, log info about OAuth flow
+        """Initialize the service."""
+        # Log info about OAuth flow if no refresh token
         if not self.settings.refresh_token:
             logger.info(
                 "No STRAVA_REFRESH_TOKEN found in environment. "
-                "The OAuth flow will be triggered automatically when needed."
+                "The standalone OAuth flow will be triggered automatically when needed."
             )
 
     async def close(self):
