@@ -3,14 +3,13 @@
 import asyncio
 import logging
 import os
-import threading
 import webbrowser
 from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
 
-from strava_mcp.auth import StravaAuthenticator, REDIRECT_HOST, REDIRECT_PORT
+from strava_mcp.auth import REDIRECT_HOST, REDIRECT_PORT, StravaAuthenticator
 
 # Configure logging
 logging.basicConfig(
@@ -24,11 +23,11 @@ class StravaOAuthServer:
     """A standalone server for handling Strava OAuth flow."""
 
     def __init__(
-        self, 
-        client_id: str, 
+        self,
+        client_id: str,
         client_secret: str,
         host: str = REDIRECT_HOST,
-        port: int = REDIRECT_PORT
+        port: int = REDIRECT_PORT,
     ):
         """Initialize the OAuth server.
 
@@ -63,6 +62,8 @@ class StravaOAuthServer:
             await self._initialize_server()
 
         # Open browser to start authorization
+        if self.authenticator is None:
+            raise Exception("Authenticator not initialized")
         auth_url = self.authenticator.get_authorization_url()
         logger.info(f"Opening browser to authorize with Strava: {auth_url}")
         webbrowser.open(auth_url)
@@ -72,18 +73,19 @@ class StravaOAuthServer:
             refresh_token = await self.token_future
             logger.info("Successfully obtained refresh token")
             return refresh_token
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as err:
             logger.error("Token request was cancelled")
-            raise Exception("OAuth flow was cancelled")
+            raise Exception("OAuth flow was cancelled") from err
         except Exception as e:
             logger.exception("Error during OAuth flow")
-            raise Exception(f"OAuth flow failed: {str(e)}")
+            raise Exception(f"OAuth flow failed: {str(e)}") from e
         finally:
             # Stop the server once we have the token
             await self._stop_server()
 
     async def _initialize_server(self):
         """Initialize the FastAPI server for OAuth flow."""
+
         @asynccontextmanager
         async def lifespan(app: FastAPI):
             yield
@@ -114,20 +116,26 @@ class StravaOAuthServer:
 
         # Start server in a separate task
         self.server_task = asyncio.create_task(self._run_server())
-        
+
         # Wait a moment for the server to start
         await asyncio.sleep(0.5)
 
     async def _run_server(self):
         """Run the uvicorn server."""
-        config = uvicorn.Config(
-            app=self.app,
-            host=self.host,
-            port=self.port,
-            log_level="info",
-        )
-        self.server = uvicorn.Server(config)
+        # Ensure app is not None before passing to uvicorn
+        if not self.app:
+            raise ValueError("FastAPI app not initialized")
+
+        # Use fixed port 3008
         try:
+            config = uvicorn.Config(
+                app=self.app,
+                host=self.host,
+                port=self.port,
+                log_level="info",
+            )
+
+            self.server = uvicorn.Server(config)
             await self.server.serve()
         except Exception as e:
             logger.exception("Error running OAuth server")
@@ -141,7 +149,7 @@ class StravaOAuthServer:
             if self.server_task:
                 try:
                     await asyncio.wait_for(self.server_task, timeout=5.0)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning("Server shutdown timed out")
 
 
@@ -165,11 +173,11 @@ async def get_refresh_token_from_oauth(client_id: str, client_secret: str) -> st
 if __name__ == "__main__":
     # This allows running this file directly to get a refresh token
     import sys
-    
+
     # Check if client_id and client_secret are provided as env vars
     client_id = os.environ.get("STRAVA_CLIENT_ID")
     client_secret = os.environ.get("STRAVA_CLIENT_SECRET")
-    
+
     # If not provided as env vars, check command line args
     if not client_id or not client_secret:
         if len(sys.argv) != 3:
@@ -178,9 +186,16 @@ if __name__ == "__main__":
             sys.exit(1)
         client_id = sys.argv[1]
         client_secret = sys.argv[2]
-    
+
+    # Ensure we have non-None values
+    if client_id is None or client_secret is None:
+        print("Error: Missing client_id or client_secret")
+        sys.exit(1)
+
     async def main():
         try:
+            # We've verified these aren't None above
+            assert client_id is not None and client_secret is not None
             token = await get_refresh_token_from_oauth(client_id, client_secret)
             print(f"\nSuccessfully obtained refresh token: {token}")
             print("\nYou can add this to your environment variables:")

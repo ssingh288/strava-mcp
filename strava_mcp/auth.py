@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 import webbrowser
-from typing import Optional
 from urllib.parse import urlencode
 
 import httpx
@@ -21,6 +20,7 @@ REDIRECT_HOST = "127.0.0.1"
 
 class TokenResponse(BaseModel):
     """Response model for Strava token exchange."""
+
     access_token: str
     refresh_token: str
     expires_at: int
@@ -32,13 +32,13 @@ class StravaAuthenticator:
     """Helper class to get a Strava refresh token via OAuth flow."""
 
     def __init__(
-        self, 
-        client_id: str, 
+        self,
+        client_id: str,
         client_secret: str,
-        app: Optional[FastAPI] = None,
+        app: FastAPI | None = None,
         redirect_path: str = "/exchange_token",
         host: str = REDIRECT_HOST,
-        port: int = REDIRECT_PORT
+        port: int = REDIRECT_PORT,
     ):
         """Initialize the authenticator.
 
@@ -72,26 +72,22 @@ class StravaAuthenticator:
         try:
             # Exchange the code for tokens
             token_data = await self._exchange_code_for_token(code)
-            
+
             # If we have a token future (waiting for token), set the result
             if self.token_future and not self.token_future.done():
                 self.token_future.set_result(token_data.refresh_token)
-            
+
             return HTMLResponse(
-                "<h1>Authorization successful!</h1>"
-                "<p>You can close this tab and return to the application.</p>"
+                "<h1>Authorization successful!</h1><p>You can close this tab and return to the application.</p>"
             )
         except Exception as e:
             logger.exception("Error during token exchange")
-            
+
             # If we have a token future (waiting for token), set the exception
             if self.token_future and not self.token_future.done():
                 self.token_future.set_exception(e)
-                
-            return HTMLResponse(
-                "<h1>Authorization failed!</h1>"
-                "<p>An error occurred. Please check the logs.</p>"
-            )
+
+            return HTMLResponse("<h1>Authorization failed!</h1><p>An error occurred. Please check the logs.</p>")
 
     async def _exchange_code_for_token(self, code: str) -> TokenResponse:
         """Exchange the authorization code for tokens.
@@ -115,12 +111,12 @@ class StravaAuthenticator:
                     "grant_type": "authorization_code",
                 },
             )
-            
+
             if response.status_code != 200:
                 error_msg = f"Failed to exchange token: {response.text}"
                 logger.error(error_msg)
                 raise Exception(error_msg)
-            
+
             data = response.json()
             token_data = TokenResponse(**data)
             self.refresh_token = token_data.refresh_token
@@ -141,7 +137,7 @@ class StravaAuthenticator:
         }
         return f"{AUTHORIZE_URL}?{urlencode(params)}"
 
-    def setup_routes(self, app: FastAPI = None):
+    def setup_routes(self, app: FastAPI | None = None):
         """Set up the routes for authentication.
 
         Args:
@@ -150,21 +146,17 @@ class StravaAuthenticator:
         target_app = app or self.app
         if not target_app:
             raise ValueError("No FastAPI app provided")
-        
+
+        # Make sure we have a valid FastAPI app
+        if not hasattr(target_app, "add_api_route"):
+            raise ValueError("Provided app does not appear to be a valid FastAPI instance")
+
         # Add route for the token exchange
-        target_app.add_api_route(
-            self.redirect_path, 
-            self.exchange_token, 
-            methods=["GET"]
-        )
-        
+        target_app.add_api_route(self.redirect_path, self.exchange_token, methods=["GET"])
+
         # Add route to start the auth flow
-        target_app.add_api_route(
-            "/auth", 
-            self.start_auth_flow, 
-            methods=["GET"]
-        )
-    
+        target_app.add_api_route("/auth", self.start_auth_flow, methods=["GET"])
+
     async def start_auth_flow(self):
         """Start the OAuth flow by redirecting to Strava.
 
@@ -189,7 +181,7 @@ class StravaAuthenticator:
         """
         # Create a future to wait for the token
         self.token_future = asyncio.Future()
-        
+
         # Open the browser for authorization if requested
         auth_url = self.get_authorization_url()
         if open_browser:
@@ -200,16 +192,12 @@ class StravaAuthenticator:
                 logger.info(f"Authorization URL: {auth_url}")
         else:
             logger.info(f"Please open this URL to authorize: {auth_url}")
-        
+
         # Wait for the token
         return await self.token_future
 
 
-async def get_strava_refresh_token(
-    client_id: str, 
-    client_secret: str, 
-    app: Optional[FastAPI] = None
-) -> str:
+async def get_strava_refresh_token(client_id: str, client_secret: str, app: FastAPI | None = None) -> str:
     """Get a Strava refresh token via OAuth flow.
 
     Args:
@@ -232,14 +220,15 @@ async def get_strava_refresh_token(
 if __name__ == "__main__":
     # This allows running this file directly to get a refresh token
     import sys
+
     import uvicorn
-    
+
     logging.basicConfig(level=logging.INFO)
-    
+
     # Check if client_id and client_secret are provided as env vars
     client_id = os.environ.get("STRAVA_CLIENT_ID")
     client_secret = os.environ.get("STRAVA_CLIENT_SECRET")
-    
+
     # If not provided as env vars, check command line args
     if not client_id or not client_secret:
         if len(sys.argv) != 3:
@@ -248,17 +237,17 @@ if __name__ == "__main__":
             sys.exit(1)
         client_id = sys.argv[1]
         client_secret = sys.argv[2]
-    
+
     # Create a FastAPI app for standalone operation
     app = FastAPI(title="Strava Auth")
     authenticator = StravaAuthenticator(client_id, client_secret, app)
     authenticator.setup_routes(app)
-    
+
     # Add a root route that redirects to the auth flow
     @app.get("/")
     async def root():
         return RedirectResponse("/auth")
-    
+
     async def main():
         # Start the server
         server = uvicorn.Server(
@@ -269,11 +258,11 @@ if __name__ == "__main__":
                 log_level="info",
             )
         )
-        
+
         # For standalone operation, we'll print instructions
         print("\nStrava Authentication Server")
         print(f"Open http://{REDIRECT_HOST}:{REDIRECT_PORT}/ in your browser to start authentication")
-        
+
         # Run the server (this will block until stopped)
         await server.serve()
 

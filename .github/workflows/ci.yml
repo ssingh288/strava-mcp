@@ -1,0 +1,99 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    - name: Install uv
+      run: |
+        pip install --upgrade pip
+        pip install uv
+    - name: Install dependencies
+      run: |
+        uv sync
+    - name: Lint with ruff
+      run: |
+        uv run ruff check .
+        uv run ruff format --check .
+        uv run pyright
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    - name: Install uv
+      run: |
+        pip install --upgrade pip
+        pip install uv
+    - name: Install dependencies
+      run: |
+        uv sync
+    - name: Create dummy .env file for tests
+      run: |
+        echo "STRAVA_CLIENT_ID=test_client_id" > .env
+        echo "STRAVA_CLIENT_SECRET=test_client_secret" >> .env
+        echo "STRAVA_REFRESH_TOKEN=test_refresh_token" >> .env
+      
+    - name: Run tests with coverage
+      run: |
+        uv run pytest --cov=strava_mcp && uv run coverage xml
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.xml
+        
+  server-startup:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+        
+    - name: Install uv
+      run: |
+        pip install --upgrade pip
+        pip install uv
+    
+    - name: Install dependencies
+      run: |
+        uv sync
+        
+    - name: Create dummy .env file for server
+      run: |
+        echo "STRAVA_CLIENT_ID=test_client_id" > .env
+        echo "STRAVA_CLIENT_SECRET=test_client_secret" >> .env
+        echo "STRAVA_REFRESH_TOKEN=test_refresh_token" >> .env
+        
+    - name: Test server startup
+      run: |
+        # Start the server in the background and kill it after 5 seconds
+        timeout 5s uv run mcp dev main.py || code=$?
+        if [ $code -eq 124 ]; then
+          echo "Server started successfully and was terminated after timeout"
+          exit 0
+        else
+          echo "Server failed to start with exit code $code"
+          exit 1
+        fi

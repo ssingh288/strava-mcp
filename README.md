@@ -1,5 +1,8 @@
 # Strava MCP Server
 
+[![CI/CD Pipeline](https://github.com/yorrickjansen/strava-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/yorrickjansen/strava-mcp/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/yorrickjansen/strava-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/yorrickjansen/strava-mcp)
+
 A Model Context Protocol (MCP) server for interacting with the Strava API.
 
 ## Features
@@ -167,7 +170,6 @@ Gets the leaderboard for a specific segment.
 - `tests/`: Unit tests
 - `main.py`: Entry point to run the server
 - `get_token.py`: Utility script to get a refresh token manually
-- `standalone_server.py`: Utility web server for testing OAuth flow
 
 ### Running Tests
 

@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from fastapi import FastAPI
 
@@ -13,7 +12,7 @@ logger = logging.getLogger(__name__)
 class StravaService:
     """Service for interacting with the Strava API."""
 
-    def __init__(self, settings: StravaSettings, app: Optional[FastAPI] = None):
+    def __init__(self, settings: StravaSettings, app: FastAPI | None = None):
         """Initialize the Strava service.
 
         Args:
@@ -24,15 +23,12 @@ class StravaService:
         self.api = StravaAPI(settings, app)
 
     async def initialize(self):
-        """Initialize the service, setting up auth routes if needed."""
-        # Set up authentication routes if app is available
-        await self.api.setup_auth_routes()
-        
-        # If we don't have a refresh token, log info about OAuth flow
+        """Initialize the service."""
+        # Log info about OAuth flow if no refresh token
         if not self.settings.refresh_token:
             logger.info(
                 "No STRAVA_REFRESH_TOKEN found in environment. "
-                "The OAuth flow will be triggered automatically when needed."
+                "The standalone OAuth flow will be triggered automatically when needed."
             )
 
     async def close(self):
@@ -66,9 +62,7 @@ class StravaService:
             logger.error(f"Error getting activities: {str(e)}")
             raise
 
-    async def get_activity(
-        self, activity_id: int, include_all_efforts: bool = False
-    ) -> DetailedActivity:
+    async def get_activity(self, activity_id: int, include_all_efforts: bool = False) -> DetailedActivity:
         """Get a specific activity.
 
         Args:
@@ -104,4 +98,3 @@ class StravaService:
         except Exception as e:
             logger.error(f"Error getting segments for activity {activity_id}: {str(e)}")
             raise
-

@@ -14,6 +14,7 @@ def settings():
         client_id="test_client_id",
         client_secret="test_client_secret",
         refresh_token="test_refresh_token",
+        base_url="https://www.strava.com/api/v3",
     )
 
 
@@ -175,5 +176,3 @@ async def test_get_activity(api, mock_response):
     assert activity.id == activity_data["id"]
     assert activity.name == activity_data["name"]
     assert activity.description == activity_data["description"]
-
-
