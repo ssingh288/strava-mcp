@@ -108,8 +108,38 @@ mcp dev main.py
 To install the server in Claude Desktop:
 
 ```bash
-mcp install main.py
+mcp install --env-file ~/.ssh/env-strava.sh main.py
 ```
+
+Where `~/.ssh/strava.sh` contains your Strava credentials:
+
+```bash
+export STRAVA_CLIENT_ID=your_client_id
+export STRAVA_CLIENT_SECRET=your_client_secret
+```
+
+Note that this will actually copy your credentials to your Claude Desktop configuration (`/Users/<username>/Library/Application Support/Claude/claude_desktop_config.json`).
+
+Alternatively, you can add the following to your Claude Desktop configuration:
+
+```json
+"strava": {
+    "command": "bash",
+    "args": [
+        "-c",
+        "source ~/.ssh/strava.sh && uv --directory /Users/yorrickjansen/work/mcp/strava run main.py"
+    ]
+}
+```
+
+Where `~/.ssh/strava.sh` contains your Strava credentials:
+
+```bash
+export STRAVA_CLIENT_ID=your_client_id
+export STRAVA_CLIENT_SECRET=your_client_secret
+```
+
+This option is more secure as it doesn't expose your credentials in your configuration file.
 
 ## Tools
 
