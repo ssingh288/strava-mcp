@@ -92,7 +92,11 @@ This approach eliminates the need to manually go through the authorization flow 
 To run the server:
 
 ```bash
-python main.py
+# If installed as a package:
+strava-mcp
+
+# Or run the module directly:
+python -m strava_mcp.main
 ```
 
 ### Development Mode
@@ -100,7 +104,7 @@ python main.py
 You can run the server in development mode with the MCP CLI:
 
 ```bash
-mcp dev main.py
+mcp dev strava_mcp/main.py
 ```
 
 ### Installing in Claude Desktop
@@ -108,7 +112,7 @@ mcp dev main.py
 To install the server in Claude Desktop:
 
 ```bash
-mcp install --env-file ~/.ssh/env-strava.sh main.py
+mcp install --env-file ~/.ssh/env-strava.sh strava_mcp/main.py
 ```
 
 Where `~/.ssh/strava.sh` contains your Strava credentials:
@@ -127,7 +131,7 @@ Alternatively, you can add the following to your Claude Desktop configuration:
     "command": "bash",
     "args": [
         "-c",
-        "source ~/.ssh/strava.sh && uv --directory /Users/yorrickjansen/work/mcp/strava run main.py"
+        "source ~/.ssh/strava.sh && uv --directory /Users/yorrickjansen/work/mcp/strava run -m strava_mcp.main"
     ]
 }
 ```
@@ -198,7 +202,7 @@ Gets the leaderboard for a specific segment.
   - `service.py`: Service layer for business logic
   - `server.py`: MCP server implementation
 - `tests/`: Unit tests
-- `main.py`: Entry point to run the server
+- `strava_mcp/main.py`: Main entry point to run the server
 - `get_token.py`: Utility script to get a refresh token manually
 
 ### Running Tests
