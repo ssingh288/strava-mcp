@@ -899,8 +899,8 @@ wheels = [
 ]
 
 [[package]]
-name = "strava"
-version = "0.1.0"
+name = "strava-mcp"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
