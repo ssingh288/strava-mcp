@@ -5,190 +5,119 @@
 
 A Model Context Protocol (MCP) server for interacting with the Strava API.
 
-## Features
+## User Guide
 
-This MCP server provides tools to access data from the Strava API:
+### Installation
 
-- Get user's activities
-- Get a specific activity's details
-- Get the segments of an activity
-- Get the leaderboard of a segment
-
-## Installation
-
-### Prerequisites
-
-- Python 3.13 or later
-- Strava API credentials (client ID and client secret)
-
-### Setup
-
-1. Clone the repository:
+You can easily install Strava MCP with `uvx`:
 
 ```bash
-git clone <repository-url>
-cd strava
+uvx strava-mcp
 ```
 
-2. Install dependencies with [uv](https://docs.astral.sh/uv/):
+### Setting Up Strava Credentials
 
-```bash
-uv install
-```
+1. **Create a Strava API Application**:
+   - Go to [https://www.strava.com/settings/api](https://www.strava.com/settings/api)
+   - Create a new application to obtain your Client ID and Client Secret
+   - For "Authorization Callback Domain", enter `localhost`
 
-3. Set up environment variables with your Strava API credentials:
+2. **Configure Your Credentials**:
+   Create a credentials file (e.g., `~/.ssh/strava.sh`):
 
-Create a Strava app at https://www.strava.com/settings/api and obtain your client ID and client secret.
+   ```bash
+   export STRAVA_CLIENT_ID=your_client_id
+   export STRAVA_CLIENT_SECRET=your_client_secret
+   ```
 
-You can set environment variables directly:
+3. **Configure Claude Desktop**:
+   Add the following to your Claude configuration (`/Users/<username>/Library/Application Support/Claude/claude_desktop_config.json`):
 
-```bash
-export STRAVA_CLIENT_ID=your_client_id  # from https://www.strava.com/settings/api
-export STRAVA_CLIENT_SECRET=your_client_secret  # from https://www.strava.com/settings/api
-```
-
-Alternatively, you can create a `.env` file in the root directory with these variables:
-
-```
-STRAVA_CLIENT_ID=your_client_id
-STRAVA_CLIENT_SECRET=your_client_secret
-```
-
-The application will automatically load variables from the `.env` file if it exists.
+   ```json
+   "strava": {
+       "command": "bash",
+       "args": [
+           "-c",
+           "source ~/.ssh/strava.sh && uvx strava-mcp"
+       ]
+   }
+   ```
 
 ### Authentication
 
-The server includes an automatic OAuth flow using a separate local web server:
+The first time you use the Strava MCP tools:
 
-1. The first time you make a request to the Strava API, the system checks if you have a refresh token.
-2. If no refresh token is found, it automatically starts a standalone OAuth server and opens your browser to the Strava authorization page.
-3. After authorizing the application in your browser, you'll be redirected to a local callback page.
-4. The server automatically obtains and stores the refresh token for future use.
+1. An authentication flow will automatically start
+2. Your browser will open to the Strava authorization page
+3. After authorizing, you'll be redirected back to a local page
+4. Your refresh token will be saved automatically for future use
 
-You can also get a refresh token manually by running:
+### Available Tools
 
-```bash
-python get_token.py
-```
-
-Or set the refresh token directly if you already have one:
-
-```bash
-export STRAVA_REFRESH_TOKEN=your_refresh_token
-```
-
-You can also add the refresh token to your `.env` file:
-
-```
-STRAVA_REFRESH_TOKEN=your_refresh_token
-```
-
-This approach eliminates the need to manually go through the authorization flow and copy/paste tokens. The OAuth flow uses your `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` environment variables.
-
-## Usage
-
-### Running the Server
-
-To run the server:
-
-```bash
-# If installed as a package:
-strava-mcp
-
-# Or run the module directly:
-python -m strava_mcp.main
-```
-
-### Development Mode
-
-You can run the server in development mode with the MCP CLI:
-
-```bash
-mcp dev strava_mcp/main.py
-```
-
-### Installing in Claude Desktop
-
-To install the server in Claude Desktop:
-
-```bash
-mcp install --env-file ~/.ssh/env-strava.sh strava_mcp/main.py
-```
-
-Where `~/.ssh/strava.sh` contains your Strava credentials:
-
-```bash
-export STRAVA_CLIENT_ID=your_client_id
-export STRAVA_CLIENT_SECRET=your_client_secret
-```
-
-Note that this will actually copy your credentials to your Claude Desktop configuration (`/Users/<username>/Library/Application Support/Claude/claude_desktop_config.json`).
-
-Alternatively, you can add the following to your Claude Desktop configuration:
-
-```json
-"strava": {
-    "command": "bash",
-    "args": [
-        "-c",
-        "source ~/.ssh/strava.sh && uv --directory /Users/yorrickjansen/work/mcp/strava run -m strava_mcp.main"
-    ]
-}
-```
-
-Where `~/.ssh/strava.sh` contains your Strava credentials:
-
-```bash
-export STRAVA_CLIENT_ID=your_client_id
-export STRAVA_CLIENT_SECRET=your_client_secret
-```
-
-This option is more secure as it doesn't expose your credentials in your configuration file.
-
-## Tools
-
-### Get User Activities
-
-Retrieves a list of activities for the authenticated user.
+#### Get User Activities
+Retrieves activities for the authenticated user.
 
 **Parameters:**
-- `before` (optional): Epoch timestamp to filter activities before a certain time
-- `after` (optional): Epoch timestamp to filter activities after a certain time
+- `before` (optional): Epoch timestamp for filtering
+- `after` (optional): Epoch timestamp for filtering
 - `page` (optional): Page number (default: 1)
 - `per_page` (optional): Number of items per page (default: 30)
 
-### Get Activity
-
+#### Get Activity
 Gets detailed information about a specific activity.
 
 **Parameters:**
 - `activity_id`: The ID of the activity
-- `include_all_efforts` (optional): Whether to include all segment efforts (default: false)
+- `include_all_efforts` (optional): Include segment efforts (default: false)
 
-### Get Activity Segments
-
-Retrieves the segments from a specific activity.
+#### Get Activity Segments
+Retrieves segments from a specific activity.
 
 **Parameters:**
 - `activity_id`: The ID of the activity
 
-### Get Segment Leaderboard
-
+#### Get Segment Leaderboard
 Gets the leaderboard for a specific segment.
 
 **Parameters:**
 - `segment_id`: The ID of the segment
-- `gender` (optional): Filter by gender ('M' or 'F')
-- `age_group` (optional): Filter by age group
-- `weight_class` (optional): Filter by weight class
-- `following` (optional): Filter by friends of the authenticated athlete
-- `club_id` (optional): Filter by club
-- `date_range` (optional): Filter by date range
-- `context_entries` (optional): Number of context entries
-- `page` (optional): Page number (default: 1)
-- `per_page` (optional): Number of items per page (default: 30)
+- Various optional filters (gender, age group, etc.)
 
-## Development
+## Developer Guide
+
+### Project Setup
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd strava
+   ```
+
+2. Install dependencies:
+   ```bash
+   uv install
+   ```
+
+3. Set up environment variables:
+   ```bash
+   export STRAVA_CLIENT_ID=your_client_id
+   export STRAVA_CLIENT_SECRET=your_client_secret
+   ```
+   Alternatively, create a `.env` file with these variables.
+
+### Running in Development Mode
+
+Run the server with MCP CLI:
+```bash
+mcp dev strava_mcp/main.py
+```
+
+### Manual Authentication
+
+You can get a refresh token manually by running:
+```bash
+python get_token.py
+```
 
 ### Project Structure
 
@@ -207,48 +136,25 @@ Gets the leaderboard for a specific segment.
 
 ### Running Tests
 
-To run tests:
-
 ```bash
 pytest
 ```
 
 ### Publishing to PyPI
 
-To build and publish the package to PyPI, use [uv](https://docs.astral.sh/uv/):
-
 #### Building the package
-
 ```bash
 # Build both sdist and wheel
 uv build
-
-# Build only wheel
-uv build --wheel
 ```
 
-The built packages will be in the `dist/` directory.
-
 #### Publishing to PyPI
-
 ```bash
 # Publish to Test PyPI first
 uv publish --index testpypi
 
 # Publish to PyPI
 uv publish
-```
-
-#### Installing from PyPI
-
-After publishing, your package can be installed with:
-
-```bash
-# From Test PyPI
-pip install --index-url https://test.pypi.org/simple/ strava-mcp
-
-# From PyPI
-pip install strava-mcp
 ```
 
 ## License
