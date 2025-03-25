@@ -99,7 +99,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: server-startup, lint, test
+    needs: [server-startup, lint, test]
     steps:
       - uses: actions/checkout@v4
       - run: uv build --no-sources  # Ensures build independence [2]
