@@ -43,7 +43,7 @@ build-backend = "hatchling.build"
 packages = ["strava_mcp"]
 
 [project.scripts]
-strava-mcp = "strava_mcp:main"
+strava-mcp = "strava_mcp.main:main"
 
 [[tool.uv.index]]
 name = "testpypi"

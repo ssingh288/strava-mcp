@@ -213,6 +213,44 @@ To run tests:
 pytest
 ```
 
+### Publishing to PyPI
+
+To build and publish the package to PyPI, use [uv](https://docs.astral.sh/uv/):
+
+#### Building the package
+
+```bash
+# Build both sdist and wheel
+uv build
+
+# Build only wheel
+uv build --wheel
+```
+
+The built packages will be in the `dist/` directory.
+
+#### Publishing to PyPI
+
+```bash
+# Publish to Test PyPI first
+uv publish --index testpypi
+
+# Publish to PyPI
+uv publish
+```
+
+#### Installing from PyPI
+
+After publishing, your package can be installed with:
+
+```bash
+# From Test PyPI
+pip install --index-url https://test.pypi.org/simple/ strava-mcp
+
+# From PyPI
+pip install strava-mcp
+```
+
 ## License
 
 [MIT License](LICENSE)
