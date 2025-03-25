@@ -5,6 +5,10 @@
 
 A Model Context Protocol (MCP) server for interacting with the Strava API.
 
+<a href="https://glama.ai/mcp/servers/@yorrickjansen/strava-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@yorrickjansen/strava-mcp/badge" alt="Strava Server MCP server" />
+</a>
+
 ## User Guide
 
 ### Installation
