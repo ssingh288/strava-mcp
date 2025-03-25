@@ -7,10 +7,8 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Run the Strava MCP server."""
-    # Use fixed port 3008
-    port = 3008
-    logger.info(f"Using port {port} for MCP server")
-    mcp.run(port=port)
+    logger.info("Starting MCP server")
+    mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
