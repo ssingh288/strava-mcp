@@ -42,7 +42,7 @@ class StravaAPI:
         return
 
     async def start_auth_flow(self) -> str:
-        """This method is deprecated. 
+        """This method is deprecated.
         The standalone OAuth server is used instead via _ensure_token().
 
         Returns:

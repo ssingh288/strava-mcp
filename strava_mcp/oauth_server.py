@@ -134,7 +134,7 @@ class StravaOAuthServer:
                 port=self.port,
                 log_level="info",
             )
-            
+
             self.server = uvicorn.Server(config)
             await self.server.serve()
         except Exception as e:
