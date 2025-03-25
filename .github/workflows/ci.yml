@@ -88,7 +88,7 @@ jobs:
     - name: Test server startup
       run: |
         # Start the server in the background and kill it after 5 seconds
-        timeout 5s uv run mcp dev main.py || code=$?
+        timeout 5s uv run mcp dev strava_mcp/main.py || code=$?
         if [ $code -eq 124 ]; then
           echo "Server started successfully and was terminated after timeout"
           exit 0
