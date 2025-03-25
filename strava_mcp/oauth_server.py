@@ -141,7 +141,6 @@ class StravaOAuthServer:
             logger.exception("Error running OAuth server")
             if not self.token_future.done():
                 self.token_future.set_exception(e)
-            raise
 
     async def _stop_server(self):
         """Stop the uvicorn server."""
